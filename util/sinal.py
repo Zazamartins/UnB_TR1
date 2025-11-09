@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import norm
 
 
 class Sinal:
@@ -7,13 +8,10 @@ class Sinal:
     def __init__(self, bits_por_simbolo: int = 1):
         self.bits_por_simbolo = bits_por_simbolo
 
-    # Usar pyplot.pre ao invés de várias amostras
-    def gerar_sinal(self, mensagem: str) -> np.ndarray:
+    def gerar_sinal_binario(self, mensagem: str) -> np.ndarray:
         """Converte a mensagem em uma sequência de bits."""
         bits = "".join(format(ord(c), "08b") for c in mensagem)
         bits = np.array([int(b) for b in bits])
-
-        # Gera o sinal de tensão contínuo no tempo
 
         if self.bits_por_simbolo > 1:
             num_simbolos = len(bits) // self.bits_por_simbolo
@@ -21,6 +19,27 @@ class Sinal:
             bits = bits.reshape((num_simbolos, self.bits_por_simbolo))
 
         return bits
+
+    def gerar_pulso_tensao(self, simbolos_decimais: np.ndarray) -> np.ndarray:
+        """Gera uma curva sigma simulando um pulso elétrico."""
+        sinal_com_curva = []
+
+        for i, valor in enumerate(simbolos_decimais):
+            duracao_pulso = 1.0
+            num_amostras = 100
+            tempo = np.linspace(0, duracao_pulso, num_amostras)
+
+            curva_sigma = norm.pdf(
+                tempo, loc=duracao_pulso / 2, scale=duracao_pulso / 6
+            )
+            curva_sigma /= np.max(curva_sigma)  # Normaliza para o pico em 1
+            curva_sigma *= valor  # Escala pelo valor decimal do símbolo
+
+            sinal_com_curva.append(curva_sigma)
+
+        sinal_com_curva = np.array(sinal_com_curva)
+
+        return sinal_com_curva
 
     def binario_para_decimal(self, bits: np.ndarray) -> np.ndarray:
         """Converte uma sequência de símbolos em uma sequência de seus respectivos decimais."""

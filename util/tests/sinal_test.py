@@ -2,6 +2,8 @@ import unittest
 
 import numpy as np
 import numpy.testing as npt
+from matplotlib import pyplot as plt
+
 
 from util.sinal import Sinal
 
@@ -52,7 +54,7 @@ class TestFonteDeDados(unittest.TestCase):
     # g = "01100111"
     def test_fluxo_bits_1_bit_por_simbolo(self):
         fonte = Sinal(bits_por_simbolo=1)
-        sinal = fonte.gerar_sinal(
+        sinal = fonte.gerar_sinal_binario(
             mensagem="The quick brown fox jumps over the lazy dog"
         )
 
@@ -74,7 +76,7 @@ class TestFonteDeDados(unittest.TestCase):
 
     def test_fluxo_bits_2_bits_por_simbolo(self):
         fonte = Sinal(bits_por_simbolo=2)
-        sinal = fonte.gerar_sinal(
+        sinal = fonte.gerar_sinal_binario(
             mensagem="The quick brown fox jumps over the lazy dog"
         )
 
@@ -92,7 +94,7 @@ class TestFonteDeDados(unittest.TestCase):
 
     def test_fluxo_bits_4_bits_por_simbolo(self):
         fonte = Sinal(bits_por_simbolo=4)
-        sinal = fonte.gerar_sinal(
+        sinal = fonte.gerar_sinal_binario(
             mensagem="The quick brown fox jumps over the lazy dog"
         )
 
@@ -103,7 +105,7 @@ class TestFonteDeDados(unittest.TestCase):
 
     def test_fluxo_bits_8_bits_por_simbolo(self):
         fonte = Sinal(bits_por_simbolo=8)
-        sinal = fonte.gerar_sinal(
+        sinal = fonte.gerar_sinal_binario(
             mensagem="The quick brown fox jumps over the lazy dog"
         )
 
@@ -111,6 +113,40 @@ class TestFonteDeDados(unittest.TestCase):
         t = np.array([[0, 1, 0, 1, 0, 1, 0, 0]])
 
         npt.assert_array_equal(sinal[:1], t)
+
+    def test_gerar_curva_sigma(self):
+        fonte = Sinal(bits_por_simbolo=2)
+        simbolos = np.array([0, 1, 2, 3])
+        sinal_com_curva = fonte.gerar_pulso_tensao(simbolos)
+        
+        # Plotar 1) o sinal completo e 2) cada símbolo individualmente 
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.title("Pulsos de tensão")
+        plt.plot(sinal_com_curva.flatten())
+        plt.xlabel("Amostras")
+        plt.ylabel("Tensão")
+        plt.grid()
+        plt.subplot(2, 1, 2)
+        plt.title("Pulsos gerados por cada símbolo")
+        plt.plot(sinal_com_curva[0], label='"00"')
+        plt.plot(sinal_com_curva[1], label='"01"')
+        plt.plot(sinal_com_curva[2], label='"10"')
+        plt.plot(sinal_com_curva[3], label='"11"')
+        plt.xlabel("Amostras")
+        plt.ylabel("Tensão")
+        plt.legend()
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("images/sinal_com_curva_sigma.png")
+            
+
+        # Verifica se o comprimento do sinal está correto
+        self.assertEqual(len(sinal_com_curva), len(simbolos))
+        self.assertEqual(max(sinal_com_curva[0]), 0)
+        self.assertEqual(max(sinal_com_curva[1]), 1)
+        self.assertEqual(max(sinal_com_curva[2]), 2)
+        self.assertEqual(max(sinal_com_curva[3]), 3)
 
 
 if __name__ == "__main__":
