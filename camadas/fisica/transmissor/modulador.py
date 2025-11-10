@@ -1,5 +1,6 @@
 import numpy as np
 
+from camadas.fisica.transmissor.modulacoes import ASK, FSK, PSK, QAM16, QPSK
 from util.portadora import Portadora
 from util.ruido import Ruido
 from util.sinal import Sinal
@@ -7,11 +8,11 @@ from util.sinal import Sinal
 from .base import TransmissorBase
 
 MODULADOCOES = {
-    # "ask": ASK,
-    # "fsk": FSK,
-    # "psk": PSK,
-    # "qpsk": QPSK,
-    # "16-qam": QAM16,
+    "ask": ASK,
+    "fsk": FSK,
+    "psk": PSK,
+    "qpsk": QPSK,
+    "16-qam": QAM16,
 }
 
 
@@ -24,11 +25,12 @@ class Modulador(TransmissorBase):
         largura_de_banda: float,
         bits_por_simbolo: int = 1,
         tensao_pico: float = 3.3,
+        debug=False,
     ):
         super().__init__()
         if modulacao.lower() not in MODULADOCOES:
             raise ValueError(f"Modulação '{modulacao}' não implementada.")
-        self.modulador = MODULADOCOES[modulacao](bits_por_simbolo)
+        self.modulador = MODULADOCOES[modulacao]
         self.bits_por_simbolo = bits_por_simbolo
         self.modulacao = modulacao
         self.portadora = Portadora(
@@ -42,23 +44,29 @@ class Modulador(TransmissorBase):
 
         simbolos_decimais = sinal.binario_para_decimal(bits)
 
-        amplitudes = np.zeros_like(simbolos_decimais)
-        frequencias = np.zeros_like(simbolos_decimais)
+        amplitudes = np.ones_like(simbolos_decimais)
+        frequencias = np.ones_like(simbolos_decimais)
         fases = np.zeros_like(simbolos_decimais)
 
         if self.modulacao == "ask":
-            amplitudes = self.modulador.gerar_parametros(simbolos_decimais)
+            ask = self.modulador()
+            amplitudes = ask.gerar_parametros(simbolos_decimais)
         elif self.modulacao == "fsk":
-            frequencias = self.modulador.gerar_parametros(simbolos_decimais)
+            fsk = self.modulador()
+            frequencias = fsk.gerar_parametros(simbolos_decimais)
         elif self.modulacao == "psk":
-            fases = self.modulador.gerar_parametros(simbolos_decimais)
+            psk = self.modulador(self.bits_por_simbolo)
+            fases = psk.gerar_parametros(simbolos_decimais)
         elif self.modulacao == "qpsk":
-            fases = self.modulador.gerar_parametros(simbolos_decimais)
+            qpsk = self.modulador()
+            fases = qpsk.gerar_parametros(simbolos_decimais)
         elif self.modulacao == "16-qam":
-            amplitudes, fases = self.modulador.gerar_parametros(simbolos_decimais)
+            qam16 = self.modulador()
+            amplitudes, fases = qam16.gerar_parametros(simbolos_decimais)
 
         sinal_modulado = self.portadora.modular(amplitudes, frequencias, fases)
 
-        sinal_modulado += ruido.gerar_ruido(sinal_modulado)
+        if not self.debug:
+            sinal_modulado += ruido.gerar_ruido(sinal_modulado)
 
         return sinal_modulado

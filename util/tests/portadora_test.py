@@ -73,7 +73,7 @@ class PortadoraTest(unittest.TestCase):
         p = portadora.Portadora(amplitude=1.0, frequencia=1.0, fase=0.0)
 
         amplitudes = np.array([0.0, 1.0, 0.0, 1.0, 0.0])
-        frequencias = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+        frequencias = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
         fases = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
 
         sinal_modulado = p.modular(amplitudes, frequencias, fases)
@@ -93,7 +93,9 @@ class PortadoraTest(unittest.TestCase):
         p = portadora.Portadora(amplitude=1.0, frequencia=1.0, fase=0.0)
 
         amplitudes = np.array([1.0, 1.0, 1.0, 1.0])
-        frequencias = np.array([0.0, 1.0 / (4 - 1), 1.0 / (4 - 2), 1.0 / (4 - 3)])
+        frequencias = np.array(
+            [1.0, 1.0 + 1.0 / (4 - 1), 1.0 + 1.0 / (4 - 2), 1.0 + 1.0 / (4 - 3)]
+        )
         fases = np.array([0.0, 0.0, 0.0, 0.0])
 
         sinal_modulado = p.modular(amplitudes, frequencias, fases)
@@ -117,7 +119,7 @@ class PortadoraTest(unittest.TestCase):
         p = portadora.Portadora(amplitude=1.0, frequencia=1.0, fase=0.0)
 
         amplitudes = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
-        frequencias = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+        frequencias = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
         fases = np.array([0.0, 45.0, 90.0, 135.0, 180.0])
 
         sinal_modulado = p.modular(amplitudes, frequencias, fases)

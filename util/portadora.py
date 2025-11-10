@@ -2,7 +2,13 @@ import numpy as np
 
 
 class Portadora:
-    def __init__(self, amplitude: float, frequencia: float, fase: float, tempo_de_simbolo: float = 1.0):
+    def __init__(
+        self,
+        amplitude: float,
+        frequencia: float,
+        fase: float,
+        tempo_de_simbolo: float = 1.0,
+    ):
         self.amplitude = amplitude
         self.frequencia = frequencia
         self.fase = fase
@@ -18,7 +24,9 @@ class Portadora:
         Retorna o sinal modulado.
         """
         numero_de_simbolos = len(amplitudes)
-        tempo = np.linspace(0, self.tempo_de_simbolo, int(self.tempo_de_simbolo * 1000), endpoint=False)
+        tempo = np.linspace(
+            0, self.tempo_de_simbolo, int(self.tempo_de_simbolo * 1000), endpoint=False
+        )
 
         sinal_modulado = np.array([])
         for i in range(numero_de_simbolos):
@@ -30,13 +38,13 @@ class Portadora:
             amplitude = amp * self.amplitude
 
             # Frequência varia entre f e 2f
-            frequencia = (freq + 1) * self.frequencia
+            frequencia = freq * self.frequencia
 
             # Fase varia entre 0 e 180 graus
             fase = np.deg2rad(fase + self.fase)
 
             ciclo = amplitude * np.sin(2 * np.pi * frequencia * tempo + fase)
-            
+
             sinal_modulado = np.concatenate((sinal_modulado, ciclo))
 
         return sinal_modulado

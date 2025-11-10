@@ -5,6 +5,7 @@ import numpy.testing as npt
 from matplotlib import pyplot as plt
 
 import camadas.fisica.transmissor.modulacoes as modulacoes
+from util.gray import Gray
 from util.sinal import Sinal
 
 
@@ -23,38 +24,35 @@ class TestModulacoes(unittest.TestCase):
             np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
         )
 
-        ask_1bit = modulacoes.ASK(bits_por_simbolo=1)
-        ask_4bits = modulacoes.ASK(bits_por_simbolo=4)
-        ask_8bits = modulacoes.ASK(bits_por_simbolo=8)
+        ask_1bit = modulacoes.ASK()
+        ask_4bits = modulacoes.ASK()
+        ask_8bits = modulacoes.ASK()
 
         amplitudes_1bit = ask_1bit.gerar_parametros(decimal_mensagem_1bit)
         amplitudes_4bits = ask_4bits.gerar_parametros(decimal_mensagem_4bits)
         amplitudes_8bits = ask_8bits.gerar_parametros(decimal_mensagem_8bits)
 
-        npt.assert_array_almost_equal(
-            amplitudes_1bit, decimal_mensagem_1bit
-        )
+        npt.assert_array_almost_equal(amplitudes_1bit, decimal_mensagem_1bit)
 
-        npt.assert_array_almost_equal(
-            amplitudes_4bits, decimal_mensagem_4bits
-        )
+        npt.assert_array_almost_equal(amplitudes_4bits, decimal_mensagem_4bits)
 
-        npt.assert_array_almost_equal(
-            amplitudes_8bits, decimal_mensagem_8bits
-        )
+        npt.assert_array_almost_equal(amplitudes_8bits, decimal_mensagem_8bits)
 
-        plt.figure(figsize=(10, 4))
+        plt.figure(figsize=(10, 12))
         plt.subplot(3, 1, 1)
         plt.title("Modulação ASK - Amplitudes dos Símbolos (1 bit por símbolo)")
         plt.stem(amplitudes_1bit)
+        plt.ylim(-0.5, 1.5)
         plt.grid()
         plt.subplot(3, 1, 2)
         plt.title("Modulação ASK - Amplitudes dos Símbolos (4 bits por símbolo)")
         plt.stem(amplitudes_4bits)
+        plt.ylim(-0.5, 1.5)
         plt.grid()
         plt.subplot(3, 1, 3)
         plt.title("Modulação ASK - Amplitudes dos Símbolos (8 bits por símbolo)")
         plt.stem(amplitudes_8bits)
+        plt.ylim(-0.5, 1.5)
         plt.grid()
         plt.tight_layout()
         plt.savefig("images/modulacao_ask.png")
@@ -73,9 +71,9 @@ class TestModulacoes(unittest.TestCase):
             np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
         )
 
-        fsk_1bit = modulacoes.FSK(bits_por_simbolo=1)
-        fsk_4bits = modulacoes.FSK(bits_por_simbolo=4)
-        fsk_8bits = modulacoes.FSK(bits_por_simbolo=8)
+        fsk_1bit = modulacoes.FSK()
+        fsk_4bits = modulacoes.FSK()
+        fsk_8bits = modulacoes.FSK()
 
         frequencias_1bit = fsk_1bit.gerar_parametros(decimal_mensagem_1bit)
         frequencias_4bits = fsk_4bits.gerar_parametros(decimal_mensagem_4bits)
@@ -83,29 +81,186 @@ class TestModulacoes(unittest.TestCase):
 
         npt.assert_array_almost_equal(
             frequencias_1bit,
-            decimal_mensagem_1bit / (2**1 - 1),
+            decimal_mensagem_1bit + 1,
         )
 
-        npt.assert_array_almost_equal(
-            frequencias_4bits, decimal_mensagem_4bits / (2**4 - 1)
-        )
+        npt.assert_array_almost_equal(frequencias_4bits, decimal_mensagem_4bits + 1)
 
-        npt.assert_array_almost_equal(
-            frequencias_8bits, decimal_mensagem_8bits / (2**8 - 1)
-        )
-        
-        plt.figure(figsize=(10, 4))
+        npt.assert_array_almost_equal(frequencias_8bits, decimal_mensagem_8bits + 1)
+
+        plt.figure(figsize=(10, 12))
         plt.subplot(3, 1, 1)
         plt.title("Modulação FSK - Frequências dos Símbolos (1 bit por símbolo)")
-        plt.stem(frequencias_1bit)
+        plt.stem(frequencias_1bit, label="$f$ = $y\cdot f_c$")
+        plt.ylim(-0.5, 2.5)
+        plt.legend()
         plt.grid()
         plt.subplot(3, 1, 2)
         plt.title("Modulação FSK - Frequências dos Símbolos (4 bits por símbolo)")
-        plt.stem(frequencias_4bits)
+        plt.stem(frequencias_4bits, label="$f$ = $y\cdot f_c$")
+        plt.ylim(-0.5, 2.5)
+        plt.legend()
         plt.grid()
         plt.subplot(3, 1, 3)
         plt.title("Modulação FSK - Frequências dos Símbolos (8 bits por símbolo)")
-        plt.stem(frequencias_8bits)
+        plt.stem(frequencias_8bits, label="$f$ = $y\cdot f_c$")
+        plt.ylim(-0.5, 2.5)
+        plt.legend()
         plt.grid()
         plt.tight_layout()
         plt.savefig("images/modulacao_fsk.png")
+
+    def test_psk_gerar_parametros(self):
+        sinal = Sinal(bits_por_simbolo=1)
+        decimal_mensagem_1bit = sinal.binario_para_decimal(
+            np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0])
+        )
+        sinal.bits_por_simbolo = 4
+        decimal_mensagem_4bits = sinal.binario_para_decimal(
+            np.array([[0, 1, 0, 1], [0, 1, 0, 0], [0, 1, 1, 0], [1, 0, 0, 0]])
+        )
+        sinal.bits_por_simbolo = 8
+        decimal_mensagem_8bits = sinal.binario_para_decimal(
+            np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
+        )
+
+        psk_1bit = modulacoes.PSK(bits_por_simbolo=1)
+        psk_4bits = modulacoes.PSK(bits_por_simbolo=4)
+        psk_8bits = modulacoes.PSK(bits_por_simbolo=8)
+
+        fases_1bit = psk_1bit.gerar_parametros(decimal_mensagem_1bit)
+        fases_4bits = psk_4bits.gerar_parametros(decimal_mensagem_4bits)
+        fases_8bits = psk_8bits.gerar_parametros(decimal_mensagem_8bits)
+
+        gray_4bits = Gray(bits_por_simbolo=4).tabela_gray
+        gray_8bits = Gray(bits_por_simbolo=8).tabela_gray
+
+        npt.assert_array_almost_equal(
+            fases_1bit,
+            decimal_mensagem_1bit * 180,
+        )
+
+        npt.assert_array_almost_equal(
+            fases_4bits,
+            np.array([gray_4bits[int(x)] for x in decimal_mensagem_4bits])
+            * (360 / (2**4)),
+        )
+
+        print(fases_4bits)
+
+        npt.assert_array_almost_equal(
+            fases_8bits,
+            np.array([gray_8bits[int(x)] for x in decimal_mensagem_8bits])
+            * (360 / (2**8)),
+        )
+
+        plt.figure(figsize=(10, 12))
+        plt.subplot(3, 1, 1)
+        plt.title("Modulação PSK - Fases dos Símbolos (1 bit por símbolo)")
+        plt.stem(fases_1bit)
+        plt.ylim(-10, 370)
+        plt.grid()
+        plt.subplot(3, 1, 2)
+        plt.title("Modulação PSK - Fases dos Símbolos (4 bits por símbolo)")
+        plt.stem(fases_4bits)
+        plt.ylim(-10, 370)
+        plt.grid()
+        plt.subplot(3, 1, 3)
+        plt.title("Modulação PSK - Fases dos Símbolos (8 bits por símbolo)")
+        plt.stem(fases_8bits)
+        plt.ylim(-10, 370)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("images/modulacao_psk.png")
+
+    def test_qpsk_gerar_parametros(self):
+        sinal = Sinal(bits_por_simbolo=2)
+        decimal_mensagem_2bits = sinal.binario_para_decimal(
+            np.array([[0, 0], [0, 1], [1, 0], [1, 1], [0, 1], [1, 0]])
+        )
+
+        qpsk = modulacoes.QPSK()
+
+        fases_2bits = qpsk.gerar_parametros(decimal_mensagem_2bits)
+
+        npt.assert_array_almost_equal(
+            fases_2bits,
+            decimal_mensagem_2bits * (360 / (2**2)),
+        )
+
+        plt.figure(figsize=(10, 4))
+        plt.title("Modulação QPSK - Fases dos Símbolos (2 bits por símbolo)")
+        plt.stem(fases_2bits)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("images/modulacao_qpsk.png")
+
+    def test_qam16_gerar_parametros(self):
+        sinal = Sinal(bits_por_simbolo=4)
+        decimal_mensagem_4bits = sinal.binario_para_decimal(
+            np.array(
+                [
+                    [0, 0, 0, 0],
+                    [0, 0, 0, 1],
+                    [0, 0, 1, 0],
+                    [0, 0, 1, 1],
+                    [0, 1, 0, 0],
+                    [0, 1, 0, 1],
+                    [0, 1, 1, 0],
+                    [0, 1, 1, 1],
+                    [1, 0, 0, 0],
+                    [1, 0, 0, 1],
+                    [1, 0, 1, 0],
+                    [1, 0, 1, 1],
+                    [1, 1, 0, 0],
+                    [1, 1, 0, 1],
+                    [1, 1, 1, 0],
+                    [1, 1, 1, 1],
+                ]
+            )
+        )
+
+        qam16 = modulacoes.QAM16(bits_por_simbolo=4)
+
+        amplitudes_4bits, fases_4bits = qam16.gerar_parametros(decimal_mensagem_4bits)
+
+        expected_amplitudes = np.array(
+            [
+                0.3333,
+                0.3333,
+                0.3333,
+                0.3333,
+                0.6667,
+                0.6667,
+                0.6667,
+                0.6667,
+                1.0000,
+                1.0000,
+                1.0000,
+                1.0000,
+                1.3333,
+                1.3333,
+                1.3333,
+                1.3333,
+            ]
+        )
+        expected_fases = decimal_mensagem_4bits * (360 / (2**4))
+
+        npt.assert_array_almost_equal(amplitudes_4bits, expected_amplitudes, decimal=4)
+
+        npt.assert_array_almost_equal(
+            fases_4bits,
+            expected_fases,
+        )
+
+        plt.figure(figsize=(10, 6))
+        plt.subplot(2, 1, 1)
+        plt.title("Modulação 16-QAM - Amplitudes dos Símbolos (4 bits por símbolo)")
+        plt.stem(amplitudes_4bits)
+        plt.grid()
+        plt.subplot(2, 1, 2)
+        plt.title("Modulação 16-QAM - Fases dos Símbolos (4 bits por símbolo)")
+        plt.stem(fases_4bits)
+        plt.grid()
+        plt.tight_layout()
+        plt.savefig("images/modulacao_16qam.png")
