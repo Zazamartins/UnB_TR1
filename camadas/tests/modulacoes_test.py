@@ -112,17 +112,16 @@ class TestModulacoes(unittest.TestCase):
 
     def test_psk_gerar_parametros(self):
         sinal = Sinal(bits_por_simbolo=1)
-        decimal_mensagem_1bit = sinal.binario_para_decimal(
-            np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0])
-        )
+        mensagem_1bit = np.array([0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0])
+        decimal_mensagem_1bit = sinal.binario_para_decimal(mensagem_1bit)
         sinal.bits_por_simbolo = 4
-        decimal_mensagem_4bits = sinal.binario_para_decimal(
-            np.array([[0, 1, 0, 1], [0, 1, 0, 0], [0, 1, 1, 0], [1, 0, 0, 0]])
+        mensagem_4bits = np.array(
+            [[0, 1, 0, 1], [0, 1, 0, 0], [0, 1, 1, 0], [1, 0, 0, 0]]
         )
+        decimal_mensagem_4bits = sinal.binario_para_decimal(mensagem_4bits)
         sinal.bits_por_simbolo = 8
-        decimal_mensagem_8bits = sinal.binario_para_decimal(
-            np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
-        )
+        mensagem_8bits = np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
+        decimal_mensagem_8bits = sinal.binario_para_decimal(mensagem_8bits)
 
         psk_1bit = modulacoes.PSK(bits_por_simbolo=1)
         psk_4bits = modulacoes.PSK(bits_por_simbolo=4)
@@ -132,43 +131,48 @@ class TestModulacoes(unittest.TestCase):
         fases_4bits = psk_4bits.gerar_parametros(decimal_mensagem_4bits)
         fases_8bits = psk_8bits.gerar_parametros(decimal_mensagem_8bits)
 
-        gray_4bits = Gray(bits_por_simbolo=4).tabela_gray
-        gray_8bits = Gray(bits_por_simbolo=8).tabela_gray
-
         npt.assert_array_almost_equal(
             fases_1bit,
             decimal_mensagem_1bit * 180,
         )
 
-        npt.assert_array_almost_equal(
-            fases_4bits,
-            np.array([gray_4bits[int(x)] for x in decimal_mensagem_4bits])
-            * (360 / (2**4)),
-        )
+        gray_4bits = Gray(bits_por_simbolo=4, normalizado=True)
+        tabela_gray_4bits = gray_4bits.tabela_gray
+        fases_esperadas_4bits = [
+            np.where(tabela_gray_4bits == simbolo)[0][0] * (360 / 16)
+            for simbolo in decimal_mensagem_4bits
+        ]
 
-        print(fases_4bits)
+        npt.assert_array_almost_equal(fases_4bits, np.array(fases_esperadas_4bits))
 
-        npt.assert_array_almost_equal(
-            fases_8bits,
-            np.array([gray_8bits[int(x)] for x in decimal_mensagem_8bits])
-            * (360 / (2**8)),
-        )
+        gray_8bits = Gray(bits_por_simbolo=8, normalizado=True)
+        tabela_gray_8bits = gray_8bits.tabela_gray
+        fases_esperadas_8bits = [
+            np.where(tabela_gray_8bits == simbolo)[0][0] * (360 / 256)
+            for simbolo in decimal_mensagem_8bits
+        ]
+
+        npt.assert_array_almost_equal(fases_8bits, np.array(fases_esperadas_8bits))
+        print(fases_8bits)
 
         plt.figure(figsize=(10, 12))
         plt.subplot(3, 1, 1)
         plt.title("Modulação PSK - Fases dos Símbolos (1 bit por símbolo)")
         plt.stem(fases_1bit)
         plt.ylim(-10, 370)
+        plt.yticks(np.arange(0, 361, 30))
         plt.grid()
         plt.subplot(3, 1, 2)
         plt.title("Modulação PSK - Fases dos Símbolos (4 bits por símbolo)")
         plt.stem(fases_4bits)
         plt.ylim(-10, 370)
+        plt.yticks(np.arange(0, 361, 30))
         plt.grid()
         plt.subplot(3, 1, 3)
         plt.title("Modulação PSK - Fases dos Símbolos (8 bits por símbolo)")
         plt.stem(fases_8bits)
         plt.ylim(-10, 370)
+        plt.yticks(np.arange(0, 361, 30))
         plt.grid()
         plt.tight_layout()
         plt.savefig("images/modulacao_psk.png")
@@ -220,37 +224,60 @@ class TestModulacoes(unittest.TestCase):
             )
         )
 
-        qam16 = modulacoes.QAM16(bits_por_simbolo=4)
+        qam16 = modulacoes.QAM16()
 
         amplitudes_4bits, fases_4bits = qam16.gerar_parametros(decimal_mensagem_4bits)
 
-        expected_amplitudes = np.array(
+        amplitude_I = np.array(
             [
-                0.3333,
-                0.3333,
-                0.3333,
-                0.3333,
-                0.6667,
-                0.6667,
-                0.6667,
-                0.6667,
-                1.0000,
-                1.0000,
-                1.0000,
-                1.0000,
-                1.3333,
-                1.3333,
-                1.3333,
-                1.3333,
+                -1 / (3 * np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                1 / (np.sqrt(2)),
             ]
         )
-        expected_fases = decimal_mensagem_4bits * (360 / (2**4))
 
-        npt.assert_array_almost_equal(amplitudes_4bits, expected_amplitudes, decimal=4)
+        amplitude_Q = np.array(
+            [
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                -1 / (3 * np.sqrt(2)),
+                -1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+                1 / (3 * np.sqrt(2)),
+                1 / (np.sqrt(2)),
+            ]
+        )
+
+        amplitudes_esperadas = np.sqrt(amplitude_I**2 + amplitude_Q**2)
+        fases_esperadas = np.degrees(np.arctan2(amplitude_Q, amplitude_I)) % 360
+
+        npt.assert_array_almost_equal(amplitudes_4bits, amplitudes_esperadas)
 
         npt.assert_array_almost_equal(
             fases_4bits,
-            expected_fases,
+            fases_esperadas,
         )
 
         plt.figure(figsize=(10, 6))

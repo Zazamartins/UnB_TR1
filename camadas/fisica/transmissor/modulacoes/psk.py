@@ -16,20 +16,17 @@ class PSK(ModulacaoBase):
         em intervalos atrelados ao número de bits por símbolo.
         Retorna um array com as fases (em graus) correspondentes a cada símbolo.
         """
-        gray = Gray(bits_por_simbolo=self.bits_por_simbolo)
+        gray = Gray(
+            bits_por_simbolo=self.bits_por_simbolo, normalizado=True
+        )  # Codigo Gray com valores de 0 a 1
         tabela_gray = gray.tabela_gray
         parametros = []
         num_fases = 2**self.bits_por_simbolo
 
         # Nota: simbolos_decimais já apresenta valores de 0 a 1
         for simbolo in simbolos_decimais:
-            # Encontra o índice do símbolo na tabela Gray
-            if self.bits_por_simbolo > 1:
-                indice = tabela_gray.tolist().index(int(simbolo))
-            else:
-                indice = int(simbolo)
-
-            fase = (360 / num_fases) * indice
+            indice = np.where(tabela_gray == simbolo)[0][0]
+            fase = indice * (360 / num_fases)
             parametros.append(fase)
 
         return np.array(parametros)
