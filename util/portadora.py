@@ -8,11 +8,13 @@ class Portadora:
         frequencia: float,
         fase: float,
         tempo_de_simbolo: float = 1.0,
+        taxa_amostragem: int = 1000,
     ):
         self.amplitude = amplitude
         self.frequencia = frequencia
         self.fase = fase
         self.tempo_de_simbolo = tempo_de_simbolo
+        self.taxa_amostragem = taxa_amostragem
 
     def modular(
         self, amplitudes: np.ndarray, frequencias: np.ndarray, fases: np.ndarray
@@ -25,7 +27,10 @@ class Portadora:
         """
         numero_de_simbolos = len(amplitudes)
         tempo = np.linspace(
-            0, self.tempo_de_simbolo, int(self.tempo_de_simbolo * 1000), endpoint=False
+            0,
+            self.tempo_de_simbolo,
+            int(self.tempo_de_simbolo * self.taxa_amostragem),
+            endpoint=False,
         )
 
         sinal_modulado = np.array([])
@@ -63,7 +68,7 @@ class Portadora:
             numero_de_simbolos = len(mensagem)
 
         tempo_total = duracao_simbolo * numero_de_simbolos
-        tempo = np.linspace(0, tempo_total, int(tempo_total * 1000))
+        tempo = np.linspace(0, tempo_total, int(tempo_total * self.taxa_amostragem))
 
         sinal_portadora = self.gerar_portadora(tempo)
 

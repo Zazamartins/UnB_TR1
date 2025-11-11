@@ -16,6 +16,11 @@ class QAM16(ModulacaoBase):
             ]
         ) / (2**4 - 1)  # Normalizado entre 0 e 1
 
+    @property
+    def tabela_gray(self) -> np.ndarray:
+        """Retorna a tabela Gray utilizada na modulação 16QAM."""
+        return self._gray_16qam_decimal
+
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
         """Modulação 16QAM (Quadrature Amplitude Modulation).
         A fase da portadora pode ser defasada de 0 a 360 graus

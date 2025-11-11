@@ -21,6 +21,7 @@ class TransmissorBandaBase(TransmissorBase):
         codificacao: str,
         bits_por_simbolo: int = 1,
         tensao_pico: float = 3.3,
+        taxa_amostragem: int = 1000,
         debug=False,
     ):
         super().__init__()
@@ -29,13 +30,14 @@ class TransmissorBandaBase(TransmissorBase):
         self.codificador = CODIFICACOES[codificacao]()
         self.bits_por_simbolo = bits_por_simbolo
         self.tensao_pico = tensao_pico
+        self.taxa_amostragem = taxa_amostragem
         self.debug = (
             debug  # Flag para printar sinal intermediário e pular adição de ruído
         )
 
     def processar_sinal(self, mensagem: str) -> np.ndarray:
         # Converte a mensagem em uma sequência de bits
-        sinal = Sinal(self.bits_por_simbolo)
+        sinal = Sinal(self.bits_por_simbolo, taxa_amostragem=self.taxa_amostragem)
         ruido = Ruido()
         bits = sinal.gerar_sinal_binario(mensagem)
 

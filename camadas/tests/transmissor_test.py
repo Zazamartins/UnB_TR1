@@ -3,9 +3,12 @@ import unittest
 import numpy as np
 import numpy.testing as npt
 from matplotlib import pyplot as plt
+from scipy.signal import find_peaks
 
 from camadas.fisica.transmissor.banda_base import TransmissorBandaBase
+from camadas.fisica.transmissor.modulacoes.qam16 import QAM16
 from camadas.fisica.transmissor.modulador import Modulador
+from util.gray import Gray
 
 
 class TestTransmissorBandaBase(unittest.TestCase):
@@ -234,22 +237,206 @@ class TestTransmissorBandaBase(unittest.TestCase):
     def test_modulador_ask(self):
         modulador = Modulador(
             tensao_pico=3.3,
-            largura_de_banda=4.0,
+            frequencia_portadora=1.0,
             bits_por_simbolo=1,
             modulacao="ask",
             debug=True,
         )
 
         sinal_modulado = modulador.processar_sinal(mensagem="The")
-        print(sinal_modulado)
 
-        plt.figure(figsize=(10, 4))
+        picos, _ = find_peaks(sinal_modulado)
+
+        self.assertEqual(
+            len(picos), 10
+        )  # [0,1,0,1,0,1,0,0, 0,1,1,0,1,0,0,0, 0,1,1,0,0,1,0,1] = 10 1's
+
+        plt.figure(figsize=(15, 4))
         plt.title("Modulação ASK")
         plt.plot(sinal_modulado, label="Mensagem: 'The'")
+        for i in range(
+            0, len(sinal_modulado), int(modulador.portadora.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
         plt.legend()
         plt.tight_layout()
         plt.grid()
         plt.savefig("images/transmissor_modulacao_ask.png")
+
+    def test_modulador_fsk(self):
+        modulador = Modulador(
+            tensao_pico=3.3,
+            frequencia_portadora=1.0,
+            bits_por_simbolo=1,
+            modulacao="fsk",
+            debug=True,
+        )
+
+        sinal_modulado = modulador.processar_sinal(mensagem="The")
+
+        picos, _ = find_peaks(sinal_modulado)
+
+        self.assertEqual(
+            len(picos), 34
+        )  # [0,1,0,1,0,1,0,0, 0,1,1,0,1,0,0,0, 0,1,1,0,0,1,0,1] = dois picos quando 1 e um pico quando 0 = 10*2 + 14*1 = 34
+
+        plt.figure(figsize=(15, 4))
+        plt.title("Modulação FSK")
+        plt.plot(sinal_modulado, label="Mensagem: 'The'")
+        for i in range(
+            0, len(sinal_modulado), int(modulador.portadora.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
+        plt.legend()
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig("images/transmissor_modulacao_fsk.png")
+
+    def test_modulador_psk(self):
+        modulador = Modulador(
+            tensao_pico=3.3,
+            frequencia_portadora=1.0,
+            bits_por_simbolo=1,
+            modulacao="psk",
+            debug=True,
+        )
+
+        sinal_modulado = modulador.processar_sinal(mensagem="The")
+
+        # Essa parte remove máximos locais
+        picos, _ = find_peaks(sinal_modulado)
+        pico_maximo = picos[np.argmax(sinal_modulado[picos])]
+        picos_maximos = picos[
+            np.where(sinal_modulado[picos] == sinal_modulado[pico_maximo])
+        ]
+
+        self.assertEqual(
+            len(picos_maximos), 24
+        )  # [0,1,0,1,0,1,0,0, 0,1,1,0,1,0,0,0, 0,1,1,0,0,1,0,1] = um pico por símbolo = 8*3 = 24
+
+        plt.figure(figsize=(15, 4))
+        plt.title("Modulação PSK")
+        plt.plot(sinal_modulado, label="Mensagem: 'The'")
+        for i in range(
+            0, len(sinal_modulado), int(modulador.portadora.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
+        plt.legend()
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig("images/transmissor_modulacao_psk.png")
+
+    def test_modulador_qpsk(self):
+        modulador = Modulador(
+            tensao_pico=3.3,
+            frequencia_portadora=1.0,
+            bits_por_simbolo=2,
+            modulacao="qpsk",
+            debug=True,
+        )
+
+        sinal_modulado = modulador.processar_sinal(mensagem="The")
+
+        simbolos = [
+            [0, 1],  # T
+            [0, 1],  # T
+            [0, 1],  # T
+            [0, 0],  # T
+            [0, 1],  # h
+            [1, 0],  # h
+            [1, 0],  # h
+            [0, 0],  # h
+            [0, 1],  # e
+            [1, 0],  # e
+            [0, 1],  # e
+            [0, 1],  # e
+        ]
+        gray = Gray(bits_por_simbolo=2, flag_binario=True).tabela_gray
+        simbolos_gray = [gray.tolist().index(s) for s in simbolos]
+
+        plt.figure(figsize=(15, 4))
+        plt.title("Modulação QPSK")
+        plt.plot(sinal_modulado, label="Mensagem: 'The'")
+        for i in range(
+            0, len(sinal_modulado), int(modulador.portadora.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
+            # Fase
+            simbolo_index = i // int(modulador.portadora.taxa_amostragem)
+            if simbolo_index < len(simbolos_gray):
+                plt.text(
+                    i + int(0.4 * modulador.portadora.taxa_amostragem),
+                    3.5,
+                    f"{simbolos_gray[simbolo_index] * 90}°",
+                    color="blue",
+                    fontsize=12,
+                )
+        plt.legend()
+        plt.ylim(-4, 4)
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig("images/transmissor_modulacao_qpsk.png")
+
+    def test_modulador_16qam(self):
+        modulador = Modulador(
+            tensao_pico=3.3,
+            frequencia_portadora=1.0,
+            bits_por_simbolo=4,
+            modulacao="16-qam",
+            debug=True,
+        )
+
+        sinal_modulado = modulador.processar_sinal(mensagem="The")
+
+        simbolos = [
+            5,  # [0, 1, 0, 1]  T
+            4,  # [0, 1, 0, 0]  T
+            6,  # [0, 1, 1, 0]  h
+            8,  # [1, 0, 0, 0]  h
+            6,  # [0, 1, 1, 0]  e
+            5,  # [0, 1, 0, 1]  e
+        ]
+
+        picos = []
+
+        for i in range(len(simbolos)):
+            inicio = i * int(modulador.portadora.taxa_amostragem)
+            fim = (i + 1) * int(modulador.portadora.taxa_amostragem)
+            pico = np.max(sinal_modulado[inicio:fim])
+            picos.append(pico)
+
+        amplitudes, fases = QAM16().gerar_parametros(np.array(simbolos) / (2**4 - 1))
+
+        npt.assert_array_almost_equal(
+            picos,
+            amplitudes * 3.3,
+            decimal=3,
+        )
+
+        plt.figure(figsize=(15, 4))
+        plt.title("Modulação 16-QAM")
+        plt.plot(sinal_modulado, label="Mensagem: 'The'")
+        for i in range(
+            0, len(sinal_modulado), int(modulador.portadora.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
+            # Fase e amplitude
+            simbolo_index = i // int(modulador.portadora.taxa_amostragem)
+            if simbolo_index < len(amplitudes):
+                amplitude = round(amplitudes[simbolo_index], 2)
+                fase = round(fases[simbolo_index], 1)
+            plt.text(
+                i + int(0.25 * modulador.portadora.taxa_amostragem),
+                3.1,
+                f"$A$ = {amplitude}\n$\\Theta$ = {fase}°",
+                color="blue",
+                fontsize=12,
+            )
+        plt.legend()
+        plt.ylim(-4, 4)
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig("images/transmissor_modulacao_16qam.png")
 
 
 if __name__ == "__main__":

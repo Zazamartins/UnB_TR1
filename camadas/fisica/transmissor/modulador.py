@@ -1,6 +1,6 @@
 import numpy as np
 
-from camadas.fisica.transmissor.codificacoes import ASK, FSK, PSK, QAM16, QPSK
+from camadas.fisica.transmissor.modulacoes import ASK, FSK, PSK, QAM16, QPSK
 from util.portadora import Portadora
 from util.ruido import Ruido
 from util.sinal import Sinal
@@ -22,9 +22,10 @@ class Modulador(TransmissorBase):
     def __init__(
         self,
         modulacao: str,
-        largura_de_banda: float,
+        frequencia_portadora: float,
         bits_por_simbolo: int = 1,
         tensao_pico: float = 3.3,
+        taxa_amostragem: int = 1000,
         debug=False,
     ):
         super().__init__()
@@ -35,16 +36,21 @@ class Modulador(TransmissorBase):
         self.modulacao = modulacao
         self.portadora = Portadora(
             amplitude=tensao_pico,
-            frequencia=largura_de_banda,
+            frequencia=frequencia_portadora,
             fase=0,
-            tempo_de_simbolo=1 / (largura_de_banda / bits_por_simbolo),
+            tempo_de_simbolo=1 / frequencia_portadora,
+            taxa_amostragem=taxa_amostragem,
         )
         self.debug = (
             debug  # Flag para printar sinal intermediário e pular adição de ruído
         )
 
+    @property
+    def taxa_amostragem(self) -> int:
+        return self.portadora.taxa_amostragem
+
     def processar_sinal(self, mensagem: str) -> np.ndarray:
-        sinal = Sinal(self.bits_por_simbolo)
+        sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
         ruido = Ruido()
         bits = sinal.gerar_sinal_binario(mensagem)
 

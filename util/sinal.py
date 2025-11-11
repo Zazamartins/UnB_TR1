@@ -5,13 +5,18 @@ from scipy.stats import norm
 class Sinal:
     """Classe que converte uma mensagem de texto em um sinal digital."""
 
-    def __init__(self, bits_por_simbolo: int = 1):
+    def __init__(self, bits_por_simbolo: int = 1, taxa_amostragem: int = 1000):
         self._bits_por_simbolo = bits_por_simbolo
+        self._taxa_amostragem = taxa_amostragem
 
     @property
     def bits_por_simbolo(self) -> int:
         return self._bits_por_simbolo
-    
+
+    @property
+    def taxa_amostragem(self) -> int:
+        return self._taxa_amostragem
+
     @bits_por_simbolo.setter
     def bits_por_simbolo(self, valor: int):
         self._bits_por_simbolo = valor
@@ -34,7 +39,7 @@ class Sinal:
 
         for i, valor in enumerate(simbolos_decimais):
             duracao_pulso = 1.0
-            num_amostras = 100
+            num_amostras = int(self.taxa_amostragem * duracao_pulso)
             tempo = np.linspace(0, duracao_pulso, num_amostras)
 
             curva_sigma = norm.pdf(
