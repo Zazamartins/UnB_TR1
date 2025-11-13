@@ -1,0 +1,8 @@
+[project]
+name = "unb_tr1_25"
+version = "0.1.0"
+dynamic = ["dependencies"]
+[tool.setuptools.packages.find]
+exclude = ["images"]
+[tool.setuptools.dynamic]
+dependencies = { file = ["requirements.txt"] }
