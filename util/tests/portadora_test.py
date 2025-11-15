@@ -139,3 +139,24 @@ class PortadoraTest(unittest.TestCase):
 
         picos_sinal, _ = find_peaks(sinal_modulado)
         self.assertEqual(len(picos_sinal), 6)
+
+    def test_modular_por_amplitude_frequencia_alta(self):
+        p = portadora.Portadora(amplitude=1.0, frequencia=1000.0, fase=0.0, taxa_amostragem=5000)
+
+        amplitudes = np.array([0.0, 1.0, 0.0, 1.0, 0.0])
+        frequencias = np.array([1.0, 1.0, 1.0, 1.0, 1.0])
+        fases = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+        
+        sinal_modulado = p.modular(amplitudes, frequencias, fases)
+        picos_sinal, _ = find_peaks(sinal_modulado)
+        self.assertEqual(len(picos_sinal), 2000) # 1000 para cada amplitude 1 com frequencia 1000 Hz
+        self.assertEqual(len(sinal_modulado), 25000) # 5 simbolos de 1/1000s com taxa de amostragem 5000 Hz
+        
+        plt.figure(figsize=(10, 4))
+        plt.title("Modulação por Amplitude - Alta Frequência")
+        plt.plot(sinal_modulado, label="[01010] - 1kHz")
+        plt.legend()
+        plt.tight_layout()
+        plt.grid()
+        plt.savefig("images/tests/camada_fisica/portadora_modulacao_amplitude_alta_frequencia.png")
+        plt.close()

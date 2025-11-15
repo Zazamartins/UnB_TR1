@@ -48,26 +48,31 @@ class TestTransmissorBandaBase(unittest.TestCase):
         # 1/(2**8-1) = 0.00392156862
         # => -87 * 0.00392156862 = -0.34117647058
         npt.assert_array_almost_equal(
-            out_8bits[0], -0.34117647058 * transmissor_8bits.tensao_pico
+            out_8bits[0][np.argmax(np.abs(out_8bits[0]))],
+            [-0.34117647058 * transmissor_8bits.tensao_pico],
         )
 
         # [-1, 1, -1, 1] = -8 + 4 - 2 + 1 = -5
         # 1/(2**4-1) = 0.06666666667
         # => -5 * 0.06666666667 = -0.33333333335
         npt.assert_array_almost_equal(
-            out_4bits[0], -0.33333333335 * transmissor_4bits.tensao_pico
+            out_4bits[0][np.argmax(np.abs(out_4bits[0]))],
+            [-0.33333333335 * transmissor_4bits.tensao_pico],
         )
 
         # [-1] = -1
         # 1/(2**1-1) = 1
         # => -1 * 1 = -1
-        npt.assert_array_equal(out_1bit[0], -1 * transmissor_1bit.tensao_pico)
+        npt.assert_array_equal(
+            out_1bit[0][np.argmax(np.abs(out_1bit[0]))],
+            [-1.0 * transmissor_1bit.tensao_pico],
+        )
 
         plt.figure(figsize=(20, 6))
         plt.subplot(3, 1, 1)
         plt.title("Codificação NRZ Polar - 8 bits por símbolo")
-        tempo = (
-            np.arange(0, len(out_8bits) + 1) / transmissor_8bits.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_8bits) * transmissor_8bits.taxa_amostragem + 1) / (
+            transmissor_8bits.frequencia_de_simbolo * transmissor_8bits.taxa_amostragem
         )
         plt.plot(
             tempo,
@@ -79,8 +84,8 @@ class TestTransmissorBandaBase(unittest.TestCase):
         plt.grid()
         plt.subplot(3, 1, 2)
         plt.title("Codificação NRZ Polar - 4 bits por símbolo")
-        tempo = (
-            np.arange(0, len(out_4bits) + 1) / transmissor_4bits.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_4bits) * transmissor_4bits.taxa_amostragem + 1) / (
+            transmissor_4bits.frequencia_de_simbolo * transmissor_4bits.taxa_amostragem
         )
         plt.plot(
             tempo,
@@ -92,7 +97,9 @@ class TestTransmissorBandaBase(unittest.TestCase):
         plt.grid()
         plt.subplot(3, 1, 3)
         plt.title("Codificação NRZ Polar - 1 bit por símbolo")
-        tempo = np.arange(0, len(out_1bit) + 1) / transmissor_1bit.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_1bit) * transmissor_1bit.taxa_amostragem + 1) / (
+            transmissor_1bit.frequencia_de_simbolo * transmissor_1bit.taxa_amostragem
+        )
         plt.plot(
             tempo,
             np.append(out_1bit.flatten(), out_1bit.flatten()[-1]),
@@ -250,14 +257,16 @@ class TestTransmissorBandaBase(unittest.TestCase):
         # 1/(2**8-1) = 0.00392156862
         # => 171 * 0.00392156862 = 0.67058823502
         npt.assert_array_almost_equal(
-            out_8bits[0], [0.67058823502 * transmissor_8bits.tensao_pico]
+            out_8bits[0][np.argmax(np.abs(out_8bits[0]))],
+            [0.67058823502 * transmissor_8bits.tensao_pico],
         )
         # 01010100 ^ 0 = 10101011
         # [0, 1, 0, 1, 0, 1, 0, 0] = 64 + 16 + 4 = 84
         # 1/(2**8-1) = 0.00392156862
         # => 84 * 0.00392156862 = 0.32941176408
         npt.assert_array_almost_equal(
-            out_8bits[1], [0.32941176408 * transmissor_8bits.tensao_pico]
+            out_8bits[1][np.argmax(np.abs(out_8bits[1]))],
+            [0.32941176408 * transmissor_8bits.tensao_pico],
         )
 
         # 0101 ^ 1 = 0101
@@ -265,24 +274,32 @@ class TestTransmissorBandaBase(unittest.TestCase):
         # 1/(2**4-1) = 0.06666666667
         # => 10 * 0.06666666667 = 0.6666666667
         npt.assert_array_almost_equal(
-            out_4bits[0], [0.6666666667 * transmissor_4bits.tensao_pico]
+            out_4bits[0][np.argmax(np.abs(out_4bits[0]))],
+            [0.6666666667 * transmissor_4bits.tensao_pico],
         )
         # 0101 ^ 0 = 1010
         # [0, 1, 0, 1] = 4 + 0 + 1 = 5
         # 1/(2**4-1) = 0.06666666667
         # => 5 * 0.06666666667 = 0.33333333335
         npt.assert_array_almost_equal(
-            out_4bits[1], [0.33333333335 * transmissor_4bits.tensao_pico]
+            out_4bits[1][np.argmax(np.abs(out_4bits[1]))],
+            [0.33333333335 * transmissor_4bits.tensao_pico],
         )
 
-        npt.assert_array_equal(out_1bit[0], [1 * transmissor_1bit.tensao_pico])
-        npt.assert_array_equal(out_1bit[1], [0])
+        npt.assert_array_equal(
+            out_1bit[0][np.argmax(np.abs(out_1bit[0]))],
+            [1.0 * transmissor_1bit.tensao_pico]
+        )
+        npt.assert_array_equal(
+            out_1bit[1][np.argmax(np.abs(out_1bit[1]))],
+            [0.0 * transmissor_1bit.tensao_pico]
+        )
 
         plt.figure(figsize=(20, 6))
         plt.subplot(3, 1, 1)
         plt.title("Codificação Manchester - 8 bits por símbolo")
-        tempo = (
-            np.arange(0, len(out_8bits) + 1) / transmissor_8bits.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_8bits) * transmissor_8bits.taxa_amostragem + 1) / (
+            transmissor_8bits.frequencia_de_simbolo * transmissor_8bits.taxa_amostragem
         )
         plt.plot(
             tempo,
@@ -294,8 +311,8 @@ class TestTransmissorBandaBase(unittest.TestCase):
         plt.grid()
         plt.subplot(3, 1, 2)
         plt.title("Codificação Manchester - 4 bits por símbolo")
-        tempo = (
-            np.arange(0, len(out_4bits) + 1) / transmissor_4bits.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_4bits) * transmissor_4bits.taxa_amostragem + 1) / (
+            transmissor_4bits.frequencia_de_simbolo * transmissor_4bits.taxa_amostragem
         )
         plt.plot(
             tempo,
@@ -307,8 +324,11 @@ class TestTransmissorBandaBase(unittest.TestCase):
         plt.grid()
         plt.subplot(3, 1, 3)
         plt.title("Codificação Manchester - 1 bit por símbolo")
-        tempo = np.arange(0, len(out_1bit) + 1) / transmissor_1bit.frequencia_de_simbolo
+        tempo = np.arange(0, len(out_1bit) * transmissor_1bit.taxa_amostragem + 1) / (
+            transmissor_1bit.frequencia_de_simbolo * transmissor_1bit.taxa_amostragem
+        )
         plt.plot(
+            tempo,
             np.append(out_1bit.flatten(), out_1bit.flatten()[-1]),
             drawstyle="steps-post",
         )

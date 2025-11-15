@@ -21,12 +21,12 @@ class Portadora:
     ) -> np.ndarray:
         """Modula a portadora conforme os parâmetros fornecidos.
         Amplitudes - array com as amplitudes de 0 a 1 para cada símbolo.
-        Frequencias - array com as frequências de 0 a 1 para cada símbolo.
+        Frequencias - array com as frequências de 1 a 2 para cada símbolo.
         Fases - array com as fases de 0 a 180 graus para cada símbolo.
         Retorna o sinal modulado.
         """
         numero_de_simbolos = len(amplitudes)
-        tempo = np.linspace(
+        tempo_por_simbolo = np.linspace(
             0,
             self.tempo_de_simbolo,
             int(self.tempo_de_simbolo * self.taxa_amostragem),
@@ -42,13 +42,13 @@ class Portadora:
             # Amplitude varia entre 0 e a amplitude da portadora
             amplitude = amp * self.amplitude
 
-            # Frequência varia entre f e 2f
+            # Frequência varia entre f e 2fG
             frequencia = freq * self.frequencia
 
             # Fase varia entre 0 e 180 graus
             fase = np.deg2rad(fase + self.fase)
 
-            ciclo = amplitude * np.sin(2 * np.pi * frequencia * tempo + fase)
+            ciclo = amplitude * np.sin(2 * np.pi * frequencia * tempo_por_simbolo + fase)
 
             sinal_modulado = np.concatenate((sinal_modulado, ciclo))
 
