@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.stats import norm
+from scipy.integrate import quad
 
 
 class Sinal:
@@ -28,26 +29,41 @@ class Sinal:
         bits = np.array([int(b) for b in bits])
         return bits
 
-    def gerar_pulso_tensao(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Gera uma curva sigma simulando um pulso elétrico."""
-        sinal_com_curva = []
+    def gerar_pulso_tensao(
+        self, simbolos: np.ndarray, tempo_de_simbolo: float
+    ) -> np.ndarray:
+        """
+        Gera uma curva de tensão simulando um pulso elétrico utilizando série de Fourier
+        'Simbolos' é um array com os símbolos bits -> [[simbolo1], [simbolo2], [simbolo3], ...].
+        Devolve um array numpy com a forma de onda de cada símbolo -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
+        """
+        sinal = []
 
-        for i, valor in enumerate(simbolos_decimais):
-            duracao_pulso = 1.0
-            num_amostras = int(self.taxa_amostragem * duracao_pulso)
-            tempo = np.linspace(0, duracao_pulso, num_amostras)
-
-            curva_sigma = norm.pdf(
-                tempo, loc=duracao_pulso / 2, scale=duracao_pulso / 6
+        if len(simbolos.shape) > 1:
+            t = np.linspace(
+                0,
+                tempo_de_simbolo,
+                int(self.taxa_amostragem * tempo_de_simbolo),
+                endpoint=False,
             )
-            curva_sigma /= np.max(curva_sigma)  # Normaliza para o pico em 1
-            curva_sigma *= valor  # Escala pelo valor decimal do símbolo
+            for simbolo in simbolos:
+                pulso = self.__serie_de_fourier(
+                    simbolo, t, tempo_de_simbolo, harmonicas=8
+                )
+                sinal.append(pulso)
+        else:
+            t = np.linspace(
+                0,
+                tempo_de_simbolo,
+                int(self.taxa_amostragem * tempo_de_simbolo),
+                endpoint=False,
+            )
+            pulso = self.__serie_de_fourier(
+                simbolos, t, tempo_de_simbolo, harmonicas=8
+            )
+            sinal.append(pulso)
 
-            sinal_com_curva.append(curva_sigma)
-
-        sinal_com_curva = np.array(sinal_com_curva)
-
-        return sinal_com_curva
+        return np.array(sinal)
 
     def sequencia_de_bits_para_simbolos(
         self, bits: np.ndarray
@@ -77,7 +93,7 @@ class Sinal:
         else:
             for bit in bits:
                 nivel_tensao = bit * passo_de_tensao
-                sinal.append(nivel_tensao)
+                sinal = nivel_tensao
 
         return np.array(sinal)
 
@@ -87,3 +103,42 @@ class Sinal:
         binario_str = formato.format(decimal)
         binario = np.array([int(bit) for bit in binario_str])
         return binario
+
+    def __serie_de_fourier(
+        self, bits: np.ndarray, t: np.ndarray, T: float, harmonicas: int
+    ) -> np.ndarray:
+        """Gera uma série de Fourier."""
+        a_n = 0
+        b_n = 0
+        c = 2 / T * len(np.where(bits == 1)[0])
+
+        resultado: np.ndarray = np.zeros_like(t)
+        for n in range(1, harmonicas + 1):
+            for i, bit in enumerate(bits):
+                if bit == 0:
+                    continue
+                else:
+                    t0 = i * T / len(bits)
+                    tf = (i + 1) * T / len(bits)
+                    a_n += (
+                        np.sin(2 * np.pi * n * t / T)
+                        / (np.pi * n)
+                        * (
+                            np.cos(2 * np.pi * n * t0 / T)
+                            - np.cos(2 * np.pi * n * tf / T)
+                        )
+                    )
+                    b_n += (
+                        np.cos(2 * np.pi * n * t / T)
+                        / (np.pi * n)
+                        * (
+                            np.sin(2 * np.pi * n * tf / T)
+                            - np.sin(2 * np.pi * n * t0 / T)
+                        )
+                    )
+
+            resultado += a_n + b_n
+
+        resultado += c / 2
+
+        return resultado
