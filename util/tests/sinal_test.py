@@ -131,20 +131,19 @@ class TestSinal(unittest.TestCase):
         plt.grid()
         plt.subplot(2, 1, 2)
         plt.title("Pulsos gerados por cada símbolo")
-        plt.plot(sinal_com_curva[0], label='"01"')
+        plt.plot(sinal_com_curva[0:2].flatten(), label="01")
         plt.plot(
-            sinal_com_curva[1],
-            label='"10"',
+            sinal_com_curva[2:4].flatten(),
+            label="10",
         )
         plt.plot(
-            sinal_com_curva[2],
-            label='"00"',
+            sinal_com_curva[4:6].flatten(),
+            label="00",
         )
         plt.plot(
-            sinal_com_curva[3],
-            label='"10"',
+            sinal_com_curva[6:8].flatten(),
+            label="10",
         )
-        plt.xlabel("Amostras")
         plt.ylabel("Tensão")
         plt.legend()
         plt.grid()
@@ -181,6 +180,31 @@ class TestSinal(unittest.TestCase):
         plt.grid()
         plt.tight_layout()
         plt.savefig("images/tests/camada_fisica/sinal_com_curva_tensao.png")
+        plt.close()
+
+        self.assertEqual(len(sinal_com_curva[0]), fonte.taxa_amostragem)
+        self.assertEqual(len(sinal_com_curva), len(simbolos))
+        
+    def test_gerar_curva_mensagem_grande(self):
+        fonte = Sinal(bits_por_simbolo=8)
+        bits = fonte.gerar_sinal_binario(
+            mensagem="The quick brown fox"
+        )
+        simbolos = fonte.binario_para_decimal(bits)
+        sinal_com_curva = fonte.gerar_pulso_tensao(simbolos)
+
+        plt.figure(figsize=(10, 6))
+        plt.title("Pulsos de tensão para mensagem 'The quick brown fox'")
+        plt.plot(sinal_com_curva.flatten())
+        plt.xlabel("Amostras")
+        plt.ylabel("Tensão")
+        plt.grid()
+        for i in range(
+            0, len(sinal_com_curva) * int(fonte.taxa_amostragem + 1), int(fonte.taxa_amostragem)
+        ):  # Linhas verticais separando cada símbolo
+            plt.axvline(x=i, color="red", linestyle="--", alpha=0.5)
+        plt.tight_layout()
+        plt.savefig("images/tests/camada_fisica/sinal_com_curva_tensao_mensagem_grande.png")
         plt.close()
 
         self.assertEqual(len(sinal_com_curva[0]), fonte.taxa_amostragem)

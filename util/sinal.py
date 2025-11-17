@@ -29,8 +29,23 @@ class Sinal:
         bits = np.array([int(b) for b in bits])
         return bits
 
-    def gerar_pulso_tensao(
+    def gerar_pulso_tensao_ideal(
         self, simbolos_decimais: np.ndarray, tempo_de_simbolo: float = 1.0
+    ) -> np.ndarray:
+        """
+        Gera uma curva de tensão ideal simulando um pulso elétrico.
+        """
+        sinal = []
+        for simbolo in simbolos_decimais:
+            sinal.append(np.full(int(tempo_de_simbolo * self.taxa_amostragem), simbolo))
+
+        return np.array(sinal)
+
+    def gerar_pulso_tensao(
+        self,
+        simbolos_decimais: np.ndarray,
+        tempo_de_simbolo: float = 1.0,
+        simbolos_por_periodo: int = 4,
     ) -> np.ndarray:
         """
         Gera uma curva de tensão simulando um pulso elétrico utilizando série de Fourier
@@ -43,8 +58,20 @@ class Sinal:
                 simbolos_decimais, (-1, 1)
             )  # trata cada bit como um símbolo
 
-        forma_de_onda = self.__serie_de_fourier(
-            simbolos_decimais, tempo_de_simbolo=tempo_de_simbolo, harmonicas=8
+        # Dado que a série de fourier considera a função aproximada como sendo periódica,
+        # faz sentido definir quantos símbolos serão representados até que seja considerado
+        # que um período foi percorrido. Isso melhora o resultado para sequências muito extensas
+        # de símbolos.
+        segmentos = np.array_split(
+            simbolos_decimais, max(1, len(simbolos_decimais) // simbolos_por_periodo)
+        )
+        forma_de_onda = np.concatenate(
+            [
+                self.__serie_de_fourier(
+                    segmento, tempo_de_simbolo=tempo_de_simbolo, harmonicas=8
+                )
+                for segmento in segmentos
+            ]
         )
 
         return forma_de_onda
@@ -68,6 +95,7 @@ class Sinal:
         passo_de_tensao = 1 / (2**self.bits_por_simbolo - 1)
 
         if self.bits_por_simbolo > 1:
+            bits = bits.reshape((-1, self.bits_por_simbolo))
             for simbolo in bits:
                 valor_simbolo = 0
                 for i, bit in enumerate(simbolo):

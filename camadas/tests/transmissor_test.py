@@ -138,7 +138,7 @@ class TestTransmissorBandaBase(unittest.TestCase):
                 "The quick brown fox jumps over the lazy dog"
             )
         )
-
+        
         # [0, 1, 0, 1, 0, 1, 0, 0] = 64 + 16 + 4 = 84
         # 1/(2**8-1) = 0.00392156862
         # => 84 * 0.00392156862 = 0.32941176408
@@ -146,6 +146,7 @@ class TestTransmissorBandaBase(unittest.TestCase):
             out_8bits[0][np.argmax(np.abs(out_8bits[0]))],
             [0.32941176408 * transmissor_8bits.tensao_pico],
         )
+                                
         npt.assert_array_equal(np.max(np.abs(out_8bits[1])), [0.0])
 
         # [0, -1, -1, 0, -1, 0, 0, 0] = -64 -32 -8 = -104
