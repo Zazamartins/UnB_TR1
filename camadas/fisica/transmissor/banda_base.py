@@ -38,6 +38,7 @@ class TransmissorBandaBase(TransmissorBase):
         )
 
     def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
+        bits = bits.flatten()
         # Converte a mensagem em uma sequência de bits
         sinal = Sinal(self.bits_por_simbolo, taxa_amostragem=self.taxa_amostragem)
         ruido = Ruido()

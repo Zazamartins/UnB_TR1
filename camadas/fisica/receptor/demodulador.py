@@ -33,7 +33,7 @@ class Demodulador(ReceptorBase):
             debug=True,
         ).gerar_dicionario_de_formas_de_onda()
 
-    def processar_sinal(self, bits: np.ndarray) -> str:
+    def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
         sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
         tempo_de_simbolo = 1 / self.frequencia_portadora
         amostras_por_simbolo = int(self.taxa_amostragem * tempo_de_simbolo)
