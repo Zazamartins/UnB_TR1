@@ -4,10 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from matplotlib import pyplot as plt
 
-from camadas.fisica.transmissor.codificacoes.bipolar import Bipolar
-from camadas.fisica.transmissor.codificacoes.manchester import Manchester
-from camadas.fisica.transmissor.codificacoes.nrz_polar import NRZPolar
-
+from CamadaFisica import Bipolar, Manchester, NRZPolar
 
 class TestCodificacoes(unittest.TestCase):
     def test_nrz_polar(self):

@@ -4,7 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from matplotlib import pyplot as plt
 
-from util.sinal import Sinal
+from CamadaFisica import Sinal
 
 
 class TestSinal(unittest.TestCase):

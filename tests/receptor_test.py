@@ -1,15 +1,10 @@
 import unittest
 
-from camadas.fisica.receptor.demodulador import Demodulador
-from camadas.fisica.transmissor.modulador import Modulador
-from camadas.fisica.receptor.decodificador import Decodificador
-from camadas.fisica.transmissor.banda_base import TransmissorBandaBase
+from CamadaFisica import Demodulador, Modulador, Decodificador, TransmissorBandaBase, Sinal
 
 import numpy as np
 import numpy.testing as npt
 import matplotlib.pyplot as plt
-
-from util.sinal import Sinal
 
 
 class TestReceptor(unittest.TestCase):

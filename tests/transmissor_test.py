@@ -5,11 +5,7 @@ import numpy.testing as npt
 from matplotlib import pyplot as plt
 from scipy.signal import find_peaks
 
-from camadas.fisica.transmissor.banda_base import TransmissorBandaBase
-from camadas.fisica.transmissor.modulacoes.qam16 import QAM16
-from camadas.fisica.transmissor.modulador import Modulador
-from util.gray import Gray
-from util.sinal import Sinal
+from CamadaFisica import TransmissorBandaBase, QAM16, Modulador, Gray, Sinal
 
 
 class TestTransmissorBandaBase(unittest.TestCase):

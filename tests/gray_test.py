@@ -3,8 +3,7 @@ import unittest
 import numpy as np
 from matplotlib import pyplot as plt
 
-from util.gray import Gray
-
+from CamadaFisica import Gray
 
 class GrayTest(unittest.TestCase):
     def test_gray_binario(self):

@@ -4,10 +4,7 @@ import numpy as np
 import numpy.testing as npt
 from matplotlib import pyplot as plt
 
-import camadas.fisica.transmissor.modulacoes as modulacoes
-from util.gray import Gray
-from util.sinal import Sinal
-
+from CamadaFisica import ASK, FSK, PSK, QPSK, QAM16, Gray, Sinal
 
 class TestModulacoes(unittest.TestCase):
     def test_ask_gerar_parametros(self):
@@ -24,9 +21,9 @@ class TestModulacoes(unittest.TestCase):
             np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
         )
 
-        ask_1bit = modulacoes.ASK()
-        ask_4bits = modulacoes.ASK()
-        ask_8bits = modulacoes.ASK()
+        ask_1bit = ASK()
+        ask_4bits = ASK()
+        ask_8bits = ASK()
 
         amplitudes_1bit = ask_1bit.gerar_parametros(decimal_mensagem_1bit)
         amplitudes_4bits = ask_4bits.gerar_parametros(decimal_mensagem_4bits)
@@ -72,9 +69,9 @@ class TestModulacoes(unittest.TestCase):
             np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
         )
 
-        fsk_1bit = modulacoes.FSK()
-        fsk_4bits = modulacoes.FSK()
-        fsk_8bits = modulacoes.FSK()
+        fsk_1bit = FSK()
+        fsk_4bits = FSK()
+        fsk_8bits = FSK()
 
         frequencias_1bit = fsk_1bit.gerar_parametros(decimal_mensagem_1bit)
         frequencias_4bits = fsk_4bits.gerar_parametros(decimal_mensagem_4bits)
@@ -125,9 +122,9 @@ class TestModulacoes(unittest.TestCase):
         mensagem_8bits = np.array([[0, 1, 0, 1, 0, 1, 0, 0], [0, 1, 1, 0, 1, 0, 0, 0]])
         decimal_mensagem_8bits = sinal.binario_para_decimal(mensagem_8bits)
 
-        psk_1bit = modulacoes.PSK(bits_por_simbolo=1)
-        psk_4bits = modulacoes.PSK(bits_por_simbolo=4)
-        psk_8bits = modulacoes.PSK(bits_por_simbolo=8)
+        psk_1bit = PSK(bits_por_simbolo=1)
+        psk_4bits = PSK(bits_por_simbolo=4)
+        psk_8bits = PSK(bits_por_simbolo=8)
 
         fases_1bit = psk_1bit.gerar_parametros(decimal_mensagem_1bit)
         fases_4bits = psk_4bits.gerar_parametros(decimal_mensagem_4bits)
@@ -185,7 +182,7 @@ class TestModulacoes(unittest.TestCase):
             np.array([[0, 0], [0, 1], [1, 0], [1, 1], [0, 1], [1, 0]])
         )
 
-        qpsk = modulacoes.QPSK()
+        qpsk = QPSK()
 
         fases_2bits = qpsk.gerar_parametros(decimal_mensagem_2bits)
 
@@ -234,7 +231,7 @@ class TestModulacoes(unittest.TestCase):
             )
         )
 
-        qam16 = modulacoes.QAM16()
+        qam16 = QAM16()
 
         amplitudes_4bits, fases_4bits = qam16.gerar_parametros(decimal_mensagem_4bits)
 
