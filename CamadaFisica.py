@@ -7,17 +7,24 @@ import numpy as np
 # =-=-=-=-=-=-=-=-=-= UTILITÁRIAS =-=-=-=-=-=-=-=-=-=
 # ===================================================
 
+
 class Ruido:
     def __init__(self, sigma: float = 0.1):
         self.sigma = sigma
 
     def gerar_ruido(self, sinal: np.ndarray) -> np.ndarray:
-        """Gera ruído gaussiano com média 0 e desvio padrão sigma na forma de um array numpy com o mesmo formato do sinal de entrada."""
+        """
+        Gera ruído gaussiano com média 0 e desvio padrão sigma
+        na forma de um array numpy com o mesmo formato do sinal
+        de entrada.
+        Ou seja, será gerado um ruído para cada amostra do sinal.
+        """
         ruido = np.random.normal(0, self.sigma, sinal.shape)
         return ruido
 
+
 class Sinal:
-    """Classe que converte uma mensagem de texto em um sinal digital."""
+    """Classe com métodos auxiliares para a criaçao e manipulação de sinais."""
 
     def __init__(self, bits_por_simbolo: int = 1, taxa_amostragem: int = 1000):
         self._bits_por_simbolo = bits_por_simbolo
@@ -37,7 +44,9 @@ class Sinal:
 
     @staticmethod
     def gerar_sinal_binario(mensagem: str) -> np.ndarray:
-        """Converte a mensagem em uma sequência de bits."""
+        """
+        Converte a mensagem em uma sequência de bits.
+        """
         bits = "".join(format(ord(c), "08b") for c in mensagem)
         bits = np.array([int(b) for b in bits])
         return bits
@@ -46,7 +55,9 @@ class Sinal:
         self, simbolos_decimais: np.ndarray, tempo_de_simbolo: float = 1.0
     ) -> np.ndarray:
         """
-        Gera uma curva de tensão ideal simulando um pulso elétrico.
+        Gera uma curva de tensão **ideal** simulando um pulso elétrico.
+        `simbolos_decimais` é um array com os símbolos em decimal -> [simbolo1, simbolo2, simbolo3, ...].
+        O array numpy retornado tem a forma -> [[simbolo_1], [simbolo_2], [simbolo_3], ...].
         """
         sinal = []
         for simbolo in simbolos_decimais:
@@ -61,22 +72,21 @@ class Sinal:
         simbolos_por_periodo: int = 4,
     ) -> np.ndarray:
         """
-        Gera uma curva de tensão simulando um pulso elétrico utilizando série de Fourier
-        simbolos_decimais é um array com os símbolos em decimal -> [simbolo1, simbolo2, simbolo3, ...].
+        Gera uma curva de tensão simulando um pulso elétrico utilizando série de Fourier.
+        `simbolos_por_periodo` define quantos símbolos são considerados para formar um período da série.
+        `simbolos_decimais` é um array com os símbolos em decimal -> [simbolo1, simbolo2, simbolo3, ...]
         Devolve um array numpy com a forma de onda de cada símbolo -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
         """
-
-        if self.bits_por_simbolo == 1:
-            simbolos_decimais = np.reshape(
-                simbolos_decimais, (-1, 1)
-            )  # trata cada bit como um símbolo
 
         # Dado que a série de fourier considera a função aproximada como sendo periódica,
         # faz sentido definir quantos símbolos serão representados até que seja considerado
         # que um período foi percorrido. Isso melhora o resultado para sequências muito extensas
         # de símbolos.
         segmentos = np.array_split(
-            simbolos_decimais, max(1, len(simbolos_decimais) // simbolos_por_periodo)
+            simbolos_decimais,
+            max(
+                1, len(simbolos_decimais) // simbolos_por_periodo
+            ),  # [[s1], [s2], [s3], ...] -> [[s1, s2, s3, s4], [s5, s6, s7, s8], ...]
         )
         forma_de_onda = np.concatenate(
             [
@@ -92,7 +102,11 @@ class Sinal:
     def sequencia_de_bits_para_simbolos(
         self, bits: np.ndarray
     ) -> np.ndarray:  # TODO testar
-        """Agrupa a sequência de bits em símbolos de acordo com bits_por_simbolo."""
+        """
+        Agrupa a sequência de bits em símbolos de acordo com bits_por_simbolo.
+        Recebe um array numpy com a sequência de bits -> [b1, b2, b3, ...].
+        Retorna um array numpy com os símbolos agrupados -> [[simbolo1_bit1, simbolo1_bit2, ...], [simbolo2_bit1, simbolo2_bit2, ...], ...].
+        """
         if self.bits_por_simbolo == 1:
             return bits
 
@@ -103,7 +117,12 @@ class Sinal:
         return simbolos
 
     def binario_para_decimal(self, bits: np.ndarray) -> np.ndarray:
-        """Converte uma sequência de símbolos em uma sequência de seus respectivos decimais, normalizados (de 0 a 1)."""
+        """
+        Converte uma sequência de símbolos em uma sequência de seus respectivos decimais, normalizados (de 0 a 1).
+        Recebe um array numpy com os bits agrupados em simbolos ou não -> [[s1_b1, s1_b2, ...], [s2_b1, s2_b2, ...], ...] ou [b1, b2, b3, ...].
+        Retorna um array numpy com os símbolos em decimal -> [simbolo1_decimal, simbolo2_decimal, ...].
+        A normalização é feita para facilitar a divisão da tensão quando bits_por_simbolo > 1.
+        """
         sinal = []
         passo_de_tensao = 1 / (2**self.bits_por_simbolo - 1)
 
@@ -123,8 +142,13 @@ class Sinal:
         return np.array(sinal)
 
     def decimal_para_binario(self, decimal: int) -> np.ndarray:
-        """Converte um número decimal em sua representação binária com bits_por_simbolo bits."""
-        formato = "{0:0" + str(self.bits_por_simbolo) + "b}"
+        """
+        Converte um número decimal em sua representação binária com bits_por_simbolo bits.
+        Retorna um array numpy com os bits do símbolo -> [b1, b2, b3, ...].
+        """
+        formato = (
+            "{0:0" + str(self.bits_por_simbolo) + "b}"
+        )  # Garante o número de bits com um padding de zeros à esquerda
         binario_str = formato.format(decimal)
         binario = np.array([int(bit) for bit in binario_str])
         return binario
@@ -132,7 +156,10 @@ class Sinal:
     def __serie_de_fourier(
         self, simbolos: np.ndarray, tempo_de_simbolo: float, harmonicas: int
     ) -> np.ndarray:
-        """Gera uma série de Fourier."""
+        """
+        Gera uma série de Fourier.
+        Retorna um array numpy com a forma de onda com taxa_amostragem * tempo_de_simbolo amostras ([amostras/s] * [s]).
+        """
         periodo = len(simbolos) * tempo_de_simbolo
         t = np.linspace(0, periodo, int(periodo * self.taxa_amostragem), endpoint=False)
         c = 2 / periodo * np.sum(simbolos)
@@ -162,6 +189,7 @@ class Sinal:
 
         return np.reshape(resultado, (len(simbolos), -1))
 
+
 class Portadora:
     def __init__(
         self,
@@ -180,7 +208,8 @@ class Portadora:
     def modular(
         self, amplitudes: np.ndarray, frequencias: np.ndarray, fases: np.ndarray
     ) -> np.ndarray:
-        """Modula a portadora conforme os parâmetros fornecidos.
+        """
+        Modula a portadora conforme os parâmetros fornecidos.
         Amplitudes - array com as amplitudes de 0 a 1 para cada símbolo.
         Frequencias - array com as frequências de 1 a 2 para cada símbolo.
         Fases - array com as fases de 0 a 180 graus para cada símbolo.
@@ -209,14 +238,16 @@ class Portadora:
             # Fase varia entre 0 e 180 graus
             fase = np.deg2rad(fase + self.fase)
 
-            ciclo = amplitude * np.sin(2 * np.pi * frequencia * tempo_por_simbolo + fase)
+            ciclo = amplitude * np.sin(
+                2 * np.pi * frequencia * tempo_por_simbolo + fase
+            )
 
             sinal_modulado = np.concatenate((sinal_modulado, ciclo))
 
         return sinal_modulado
-   
-class Gray:
 
+
+class Gray:
     def __init__(
         self,
         bits_por_simbolo: int,
@@ -254,15 +285,20 @@ class Gray:
 
         return tabela
 
+
 # ====================================================
 # =-=-=-=-=-=-=-=-=-= CODIFICAÇÕES =-=-=-=-=-=-=-=-=-=
 # ====================================================
 
+
 class CodificacaoBase(ABC):
     @abstractmethod
     def codificar(self, bits: np.ndarray) -> np.ndarray:
-        """Retorna as palavras de bits codificadas."""
+        """
+        Codifica os bits de entrada conforme a codificação implementada.
+        """
         pass
+
 
 class Bipolar(CodificacaoBase):
     """Codificação Bipolar ou AMI:
@@ -322,21 +358,23 @@ class Bipolar(CodificacaoBase):
 
         return clock
 
+
 class Manchester(CodificacaoBase):
-    """ Codificação Manchester: 
-        Faz uma operação XOR entre os bits da mensagem e o clock.
+    """Codificação Manchester:
+    Faz uma operação XOR entre os bits da mensagem e o clock.
     """
+
     def codificar(self, bits: np.ndarray) -> np.ndarray:
         clock = self.__clock(bits)
         saida = []
         for i, clk in enumerate(clock):
-            i_mensagem = i // 2 
+            i_mensagem = i // 2
 
             mais_de_um_bit_por_simbolo = (
                 bits[i_mensagem].ndim > 0 if i_mensagem < len(bits) else False
             )
 
-            if clk == 1.0: # XOR com 1 === inverte bits
+            if clk == 1.0:  # XOR com 1 === inverte bits
                 if mais_de_um_bit_por_simbolo:
                     simbolo_saida = []
                     for b in bits[i_mensagem]:
@@ -350,7 +388,7 @@ class Manchester(CodificacaoBase):
                         saida.append(0.0)
                     else:
                         saida.append(1.0)
-            else: # XOR com 0 === mantém bits
+            else:  # XOR com 0 === mantém bits
                 if mais_de_um_bit_por_simbolo:
                     simbolo_saida = []
                     for b in bits[i_mensagem]:
@@ -364,10 +402,9 @@ class Manchester(CodificacaoBase):
                         saida.append(1.0)
                     else:
                         saida.append(0.0)
-                
 
         return np.array(saida)
-    
+
     def __clock(self, bits: np.ndarray) -> np.ndarray:
         clock = np.zeros(len(bits) * 2)
 
@@ -377,11 +414,13 @@ class Manchester(CodificacaoBase):
             else:
                 clock[i] = 0.0
         return clock
-            
+
+
 class NRZPolar(CodificacaoBase):
-    """ Codificação NRZ Polar: 
-        Bits 1 são representados por +1 e bits 0 por -1.
+    """Codificação NRZ Polar:
+    Bits 1 são representados por +1 e bits 0 por -1.
     """
+
     def codificar(self, bits: np.ndarray) -> np.ndarray:
         saida = []
         for simbolo in bits:
@@ -399,8 +438,9 @@ class NRZPolar(CodificacaoBase):
                     saida.append(1.0)
                 else:
                     saida.append(-1.0)
-            
-        return np.array(saida)    
+
+        return np.array(saida)
+
 
 CODIFICACOES = {
     "manchester": Manchester,
@@ -412,22 +452,30 @@ CODIFICACOES = {
 # =-=-=-=-=-=-=-=-=-= MODULAÇÕES =-=-=-=-=-=-=-=-=-=
 # ==================================================
 
+
 class ModulacaoBase(ABC):
     @abstractmethod
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Retorna, para cada símbolo, o valor do parâmetro utilizado na modulação da portadora."""
+        """
+        Retorna, para cada símbolo, o valor do parâmetro utilizado na modulação da portadora.
+        Recebe um array numpy com os símbolos em decimal -> [simbolo1, simbolo2, ...].
+        Retorna um array numpy com os parâmetros correspondentes -> [amplitude_simbolo1, amplitude_simbolo2, ...]. ou [freq_simbolo1, freq_simbolo2, ...]. ou [fase_simbolo1, fase_simbolo2, ...].
+        Pode retornar uma tupla de arrays numpy caso a modulação utilize mais de um parâmetro (ex: 16QAM) -> ([amplitude_simbolo1, amplitude_simbolo2, ...], [fase_simbolo1, fase_simbolo2, ...]).
+        """
         pass
 
+
 class ASK(ModulacaoBase):
+    """Modulação ASK (Amplitude Shift Keying).
+    A amplitude da portadora pode variar entre 0 e 1
+    em intervalos atrelados ao número de bits por símbolo.
+    Retorna um array com as amplitudes correspondentes a cada símbolo.
+    """
+
     def __init__(self):
         super().__init__()
 
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Modulação ASK (Amplitude Shift Keying).
-        A amplitude da portadora pode variar entre 0 e 1
-        em intervalos atrelados ao número de bits por símbolo.
-        Retorna um array com as amplitudes correspondentes a cada símbolo.
-        """
         parametros = []
 
         # Nota: simbolos_decimais já apresenta valores de 0 a 1
@@ -437,16 +485,18 @@ class ASK(ModulacaoBase):
 
         return np.array(parametros)
 
+
 class FSK(ModulacaoBase):
+    """Modulação FSK (Frequency Shift Keying).
+    A frequência da portadora pode variar entre a frequencia da portadora e 2 vezes essa frequência,
+    em intervalos atrelados ao número de bits por símbolo.
+    Retorna um array com o multiplicador de frequência correspondentes a cada símbolo.
+    """
+
     def __init__(self):
         super().__init__()
 
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Modulação FSK (Frequency Shift Keying).
-        A frequência da portadora pode variar entre a frequencia da portadora e 2 vezes essa frequência,
-        em intervalos atrelados ao número de bits por símbolo.
-        Retorna um array com o multiplicador de frequência correspondentes a cada símbolo.
-        """
         parametros = []
 
         # Nota: simbolos_decimais já apresenta valores de 0 a 1
@@ -454,18 +504,20 @@ class FSK(ModulacaoBase):
             parametros.append(1 + simbolo)
 
         return np.array(parametros)
-     
+
+
 class PSK(ModulacaoBase):
+    """Modulação PSK (Phase Shift Keying).
+    A fase da portadora pode ser defasada de 0 graus a 360 graus
+    em intervalos atrelados ao número de bits por símbolo.
+    Retorna um array com as fases (em graus) correspondentes a cada símbolo.
+    """
+
     def __init__(self, bits_por_simbolo: int = 1):
         self.bits_por_simbolo = bits_por_simbolo
         super().__init__()
 
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Modulação PSK (Phase Shift Keying).
-        A fase da portadora pode ser defasada de 0 graus a 360 graus
-        em intervalos atrelados ao número de bits por símbolo.
-        Retorna um array com as fases (em graus) correspondentes a cada símbolo.
-        """
         gray = Gray(
             bits_por_simbolo=self.bits_por_simbolo, normalizado=True
         )  # Codigo Gray com valores de 0 a 1
@@ -480,21 +532,30 @@ class PSK(ModulacaoBase):
             parametros.append(fase)
 
         return np.array(parametros)
-     
+
+
 class QPSK(ModulacaoBase):
+    """Modulação QPSK (Quadrature Phase Shift Keying).
+    A fase da portadora pode ser defasada de 0 a 360 graus
+    em intervalos atrelados ao número de bits por símbolo (2 bits por símbolo para QPSK).
+    Retorna um array com as fases correspondentes a cada símbolo.
+    """
+
     def __init__(self):
         super().__init__()
         self.psk = PSK(bits_por_simbolo=2)  # QPSK usa 2 bits por símbolo
 
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Modulação QPSK (Quadrature Phase Shift Keying).
-        A fase da portadora pode ser defasada de 0 a 360 graus
-        em intervalos atrelados ao número de bits por símbolo (2 bits por símbolo para QPSK).
-        Retorna um array com as fases correspondentes a cada símbolo.
-        """
         return self.psk.gerar_parametros(simbolos_decimais)
-     
+
+
 class QAM16(ModulacaoBase):
+    """Modulação 16QAM (Quadrature Amplitude Modulation).
+    A fase da portadora pode ser defasada de 0 a 360 graus e ter sua amplitude variada entre 1/3√2 e 1√2
+    em intervalos atrelados ao número de bits por símbolo (2 bits por símbolo para QPSK).
+    Retorna um array com as amplitudes e fases correspondentes a cada símbolo.
+    """
+
     def __init__(self):
         super().__init__()
 
@@ -505,7 +566,9 @@ class QAM16(ModulacaoBase):
                 [2, 0, 8, 10],  # [0, 0, 1, 0], [0, 0, 0, 0], [1,0,0,0], [1,0,1,0]
                 [3, 1, 9, 11],  # [0, 0, 1, 1], [0, 0, 0, 1], [1,0,0,1], [1,0,1,1]
             ]
-        ) / (2**4 - 1)  # Normalizado entre 0 e 1
+        ) / (
+            2**4 - 1
+        )  # Normalizado entre 0 e 1
 
     @property
     def tabela_gray(self) -> np.ndarray:
@@ -513,11 +576,6 @@ class QAM16(ModulacaoBase):
         return self._gray_16qam_decimal
 
     def gerar_parametros(self, simbolos_decimais: np.ndarray) -> np.ndarray:
-        """Modulação 16QAM (Quadrature Amplitude Modulation).
-        A fase da portadora pode ser defasada de 0 a 360 graus
-        em intervalos atrelados ao número de bits por símbolo (2 bits por símbolo para QPSK).
-        Retorna um array com as fases correspondentes a cada símbolo.
-        """
         amplitudes = np.zeros_like(simbolos_decimais, dtype=float)
         fases = np.zeros_like(simbolos_decimais, dtype=float)
 
@@ -565,6 +623,7 @@ class QAM16(ModulacaoBase):
 
         return amplitudes, fases
 
+
 MODULACOES = {
     "ask": ASK,
     "fsk": FSK,
@@ -577,14 +636,21 @@ MODULACOES = {
 # =-=-=-=-=-=-=-=-=-= TRANSMISSOR =-=-=-=-=-=-=-=-=-=
 # ===================================================
 
+
 class TransmissorBase(ABC):
     @abstractmethod
-    def processar_sinal(self, mensagem: str) -> np.ndarray:
-        """Processa a mensagem de entrada e retorna o sinal modulado"""
+    def processar_sinal(self, bits: str) -> np.ndarray:
+        """
+        Gera a forma de onda do sinal transmitido conforme codificação escolhida.
+        """
         pass
 
     def gerar_dicionario_de_formas_de_onda(self) -> dict[int, np.ndarray]:
-        """Gera um dicionário com as formas de onda de cada símbolo possível."""
+        """
+        Gera um dicionário com as formas de onda de cada símbolo possível IDEAL e SEM RUIDO
+        Retorna um dicionário onde a chave é o símbolo em decimal
+        e o valor é a forma de onda correspondente (array numpy). -> {simbolo_decimal: forma_de_onda, ...}
+        """
         debug_backup = self.debug
         self.debug = True  # Ativa o modo debug para evitar ruído
         sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
@@ -600,6 +666,7 @@ class TransmissorBase(ABC):
         self.debug = debug_backup  # Restaura o modo debug anterior
 
         return dicionario
+
 
 class TransmissorBandaBase(TransmissorBase):
     def __init__(
@@ -619,15 +686,23 @@ class TransmissorBandaBase(TransmissorBase):
         self.frequencia_de_simbolo = frequencia_de_simbolo
         self.tensao_pico = tensao_pico
         self.taxa_amostragem = taxa_amostragem
+        self.ruido = Ruido()
         self.debug = (
             debug  # Flag para printar sinal intermediário e pular adição de ruído
         )
 
     def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
+        """
+            Recebe um array numpy com a sequência de bits -> [b1, b2, b3, ...] ou [[simbolo1_b1, simbolo1_b2, ...], [simbolo2_b1, simbolo2_b2, ...], ...].
+            Retorna um array numpy com a forma de onda do sinal transmitido -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
+            1 - Agrupa os bits em símbolos de acordo com bits_por_simbolo
+            2 - Codifica os símbolos usando o esquema de codificação selecionado
+            3 - Determina o nível de tensão do sinal codificado
+            4 - Gera a forma de onda do sinal codificado
+            5 - Adiciona ruído ao sinal codificado (se debug=False)
+        """
         bits = bits.flatten()
-        # Converte a mensagem em uma sequência de bits
         sinal = Sinal(self.bits_por_simbolo, taxa_amostragem=self.taxa_amostragem)
-        ruido = Ruido()
         bits = sinal.sequencia_de_bits_para_simbolos(bits)
 
         # Codifica os bits usando o esquema de codificação selecionado
@@ -642,25 +717,24 @@ class TransmissorBandaBase(TransmissorBase):
 
         if not self.debug:
             sinal_codificado = sinal.gerar_pulso_tensao(
-                sinal_codificado,
-                tempo_de_simbolo=1/self.frequencia_de_simbolo
+                sinal_codificado, tempo_de_simbolo=1 / self.frequencia_de_simbolo
             )
         else:
             sinal_codificado = sinal.gerar_pulso_tensao_ideal(
-                sinal_codificado,
-                tempo_de_simbolo=1/self.frequencia_de_simbolo
+                sinal_codificado, tempo_de_simbolo=1 / self.frequencia_de_simbolo
             )
 
         if not self.debug:
-            sinal_codificado += ruido.gerar_ruido(
+            sinal_codificado += self.ruido.gerar_ruido(
                 sinal_codificado
             )  # Adiciona ruído ao sinal codificado
 
+        print(sinal_codificado.shape)
+
         return sinal_codificado
 
-class Modulador(TransmissorBase):
-    """Modula a onda portadora conforme sinal que se deseja transmitir."""
 
+class Modulador(TransmissorBase):
     def __init__(
         self,
         modulacao: str,
@@ -683,6 +757,7 @@ class Modulador(TransmissorBase):
             tempo_de_simbolo=1 / frequencia_portadora,
             taxa_amostragem=taxa_amostragem,
         )
+        self.ruido = Ruido()
         self.debug = (
             debug  # Flag para printar sinal intermediário e pular adição de ruído
         )
@@ -692,8 +767,18 @@ class Modulador(TransmissorBase):
         return self.portadora.taxa_amostragem
 
     def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
+        """
+            Recebe um array numpy com a sequência de bits -> [b1, b2, b3, ...] ou [[simbolo1_b1, simbolo1_b2, ...], [simbolo2_b1, simbolo2_b2, ...], ...].
+            Retorna um array numpy com a forma de onda do sinal modulado -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
+            1 - Agrupa os bits em símbolos de acordo com bits_por_simbolo
+            2 - Converte os símbolos para decimal
+            3 - Gera os parâmetros de modulação conforme a modulação selecionada
+            4 - Modula a portadora conforme os parâmetros gerados
+            5 - Adiciona ruído ao sinal modulado (se debug=False)
+            
+        """
+        bits = bits.flatten()
         sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
-        ruido = Ruido()
         bits = sinal.sequencia_de_bits_para_simbolos(bits)
 
         simbolos_decimais = sinal.binario_para_decimal(bits)
@@ -721,13 +806,14 @@ class Modulador(TransmissorBase):
         sinal_modulado = self.portadora.modular(amplitudes, frequencias, fases)
 
         if not self.debug:
-            sinal_modulado += ruido.gerar_ruido(sinal_modulado)
-
+            sinal_modulado += self.ruido.gerar_ruido(sinal_modulado)
         return sinal_modulado
+
 
 # ====================================================
 # =-=-=-=-=-=-=-=-=-=-= RECEPTOR =-=-=-=-=-=-=-=-=-=-=
 # ====================================================
+
 
 class ReceptorBase(ABC):
     @abstractmethod
@@ -735,10 +821,12 @@ class ReceptorBase(ABC):
         """Processa o sinal recebido e retorna a mensagem decodificada"""
         pass
 
+
 class Decodificador(ReceptorBase):
     def __init__(
         self,
         codificacao: str,
+        frequencia_de_simbolo: float = 1.0,
         bits_por_simbolo: int = 1,
         tensao_pico: float = 3.3,
         taxa_amostragem: int = 1000,
@@ -747,11 +835,13 @@ class Decodificador(ReceptorBase):
         if codificacao.lower() not in CODIFICACOES:
             raise ValueError(f"Codificação '{codificacao}' não implementada.")
         self.codificacao = codificacao.lower()
+        self.frequencia_de_simbolo = frequencia_de_simbolo
         self.bits_por_simbolo = bits_por_simbolo
         self.tensao_pico = tensao_pico
         self.taxa_amostragem = taxa_amostragem
         self.dicionario_de_formas_de_onda = TransmissorBandaBase(
             codificacao=self.codificacao,
+            frequencia_de_simbolo=self.frequencia_de_simbolo,
             bits_por_simbolo=self.bits_por_simbolo,
             tensao_pico=self.tensao_pico,
             taxa_amostragem=self.taxa_amostragem,
@@ -759,10 +849,18 @@ class Decodificador(ReceptorBase):
         ).gerar_dicionario_de_formas_de_onda()
 
     def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
+        """
+        Recebe um array numpy com a forma de onda do sinal recebido -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
+        Retorna um array numpy com a sequência de bits decodificada -> [b1, b2, b3, ...]
+        1 - Divide o sinal recebido em simbolos
+        2 - Compara cada símbolo recebido com as formas de onda ideais do dicionário de formas de onda
+        3 - Seleciona o símbolo com a menor distância euclidiana ao símbolo recebido
+        4 - Converte os símbolos decimais obtidos da comparação para binário
+        """
         bits = bits.flatten()
         
         sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
-        tempo_de_simbolo = 1
+        tempo_de_simbolo = 1 / self.frequencia_de_simbolo
         amostras_por_simbolo = int(self.taxa_amostragem * tempo_de_simbolo)
         numero_de_simbolos = len(bits) // amostras_por_simbolo
         tem_clock = self.codificacao == "manchester" or self.codificacao == "bipolar"
@@ -778,18 +876,15 @@ class Decodificador(ReceptorBase):
             if tem_clock:
                 if i % 2 == 1:
                     continue
-                    
-                fim = inicio + amostras_por_simbolo * 2
-                
-            print(inicio, fim)
 
+                fim = inicio + amostras_por_simbolo * 2
 
             segmento = bits[inicio:fim]
 
             menor_distancia = -np.inf
             simbolo_deteccao = None
 
-            for simbolo, forma_onda in self.dicionario_de_formas_de_onda.items():              
+            for simbolo, forma_onda in self.dicionario_de_formas_de_onda.items():
                 distancia = np.abs(
                     np.sum((segmento - forma_onda.flatten()) ** 2)
                 )  # Distância Euclidiana
@@ -805,6 +900,7 @@ class Decodificador(ReceptorBase):
             simbolos_demodulados = np.array(simbolos_demodulados).flatten()
 
         return simbolos_demodulados
+
 
 class Demodulador(ReceptorBase):
     def __init__(
@@ -833,6 +929,14 @@ class Demodulador(ReceptorBase):
         ).gerar_dicionario_de_formas_de_onda()
 
     def processar_sinal(self, bits: np.ndarray) -> np.ndarray:
+        """
+        Recebe um array numpy com a forma de onda do sinal recebido -> [[forma_de_onda1], [forma_de_onda2], [forma_de_onda3], ...].
+        Retorna um array numpy com a sequência de bits demodulada -> [b1, b2, b3, ...]
+        1 - Divide o sinal recebido em simbolos
+        2 - Compara cada símbolo recebido com as formas de onda ideais do dicionário de formas de onda
+        3 - Seleciona o símbolo com a menor distância euclidiana ao símbolo recebido
+        4 - Converte os símbolos decimais obtidos da comparação para binário
+        """
         sinal = Sinal(self.bits_por_simbolo, self.taxa_amostragem)
         tempo_de_simbolo = 1 / self.frequencia_portadora
         amostras_por_simbolo = int(self.taxa_amostragem * tempo_de_simbolo)
@@ -855,12 +959,12 @@ class Demodulador(ReceptorBase):
                 if menor_distancia == -np.inf or distancia < menor_distancia:
                     menor_distancia = distancia
                     simbolo_deteccao = simbolo
-                    
+
             simbolos_demodulados.append(sinal.decimal_para_binario(simbolo_deteccao))
 
         if self.bits_por_simbolo > 1:
             simbolos_demodulados = np.array(simbolos_demodulados)
         else:
             simbolos_demodulados = np.array(simbolos_demodulados).flatten()
-        
+
         return simbolos_demodulados

@@ -19,7 +19,7 @@ class TestReceptor(unittest.TestCase):
             taxa_amostragem=100 * 1000,
         )
 
-        sinal_modulado = modulador.processar_sinal(bits=[0, 1, 0, 1, 0, 1, 0, 0])  # "T"
+        sinal_modulado = modulador.processar_sinal(bits=np.array([0, 1, 0, 1, 0, 1, 0, 0]))  # "T"
         formas_de_onda = modulador.gerar_dicionario_de_formas_de_onda()
 
         demodulador = Demodulador(
@@ -117,7 +117,7 @@ class TestReceptor(unittest.TestCase):
             taxa_amostragem=100 * 1000,
         )
 
-        sinal_modulado = modulador.processar_sinal(bits=[0, 1, 0, 1, 0, 1, 0, 0])  # "T"
+        sinal_modulado = modulador.processar_sinal(bits=np.array([0, 1, 0, 1, 0, 1, 0, 0]))  # "T"
         formas_de_onda = modulador.gerar_dicionario_de_formas_de_onda()
 
         demodulador = Demodulador(
@@ -214,7 +214,7 @@ class TestReceptor(unittest.TestCase):
             taxa_amostragem=100 * 1000,
         )
 
-        sinal_modulado = modulador.processar_sinal(bits=[0, 1, 0, 1, 0, 1, 0, 0])  # "T"
+        sinal_modulado = modulador.processar_sinal(bits=np.array([0, 1, 0, 1, 0, 1, 0, 0]))  # "T"
         formas_de_onda = modulador.gerar_dicionario_de_formas_de_onda()
 
         demodulador = Demodulador(
@@ -408,6 +408,7 @@ class TestReceptor(unittest.TestCase):
             codificacao="nrz_polar",
             bits_por_simbolo=1,
             tensao_pico=3.3,
+            frequencia_de_simbolo=2,
             taxa_amostragem=1000,
         )
 
@@ -419,6 +420,7 @@ class TestReceptor(unittest.TestCase):
             codificacao="nrz_polar",
             bits_por_simbolo=1,
             tensao_pico=3.3,
+            frequencia_de_simbolo=2,
             taxa_amostragem=1000,
         )
 
