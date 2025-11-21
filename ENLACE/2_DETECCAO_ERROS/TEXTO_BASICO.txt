@@ -1,0 +1,22 @@
+1 Se na etapa anterior garantimos que o pacote "chega inteiro" (sabemos onde começa e termina), agora precisamos saber se ele "chega correto" (sem bits invertidos por ruído na rede).
+2 Bit de Paridade Par (Parity Bit)
+	1 O objetivo é que a quantidade total de números '1' na mensagem inteira (dado + bit de paridade) seja um número PAR.
+	2 Se o dado tem três '1's (ímpar) -> O bit de paridade será 1 (3+1=4, par).
+	3 LIMITAÇÃO: Ele é "frágil". Se dois bits forem corrompidos ao mesmo tempo, a paridade continua parecendo certa, e o erro não é detectado.
+3 CHECKSUM FUDEU
+
+4 CRC
+	1 Baseia-se em dividir a mensagem (considerada um número gigante) por um número fixo (o Polinômio Gerador)
+		1 Por que "Polinômio"? Em binário, fazer conta de dividir é chato. O CRC usa uma divisão especial onde a subtração é substituída por XOR (ou exclusivo).
+	2 Ex DIDÁTICO: 
+		1 Imagine que você quer enviar o número 50 para alguém. Vocês combinam um número chave, por exemplo, 3.
+		2 50 / 3 = 16 com Resto 2.
+		3 Você envia: 50 e 2
+		4 O receptor recebe. Ele pega o 50, divide pela chave 3. Se o resto da conta dele for igual ao 2 que você mandou, a mensagem está intacta.
+	3 No Mundo Binário (CRC-32):
+		1 A Mensagem: É um numerozão binário (ex: a foto que você enviou).
+		2 O Polinômio (Chave): É um número fixo de 33 bits definido pelo padrão IEEE 802 (que equivale ao hexadecimal 0x104C11DB7).
+		3 A Conta: O computador realiza uma "Divisão Longa" binária. A diferença crucial: Em vez de subtrair (1 - 1 = 0, 0 - 1 = -1), usamos XOR (1^1=0, 0^1=1). Não existe "empresta um".
+		4 Por que é melhor que soma? Se você inverter bits aleatórios numa soma, a soma final pode coincidir por sorte. Na divisão polinomial, os bits são "misturados" de uma forma cíclica. Mudar um único bit no início da mensagem altera completamente o resto da divisão lá no final. É extremamente difícil um erro passar despercebido.
+
+

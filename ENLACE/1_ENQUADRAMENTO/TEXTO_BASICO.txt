@@ -1,0 +1,13 @@
+1 como o receptor sabe onde começa e onde termina um pacote de dados dentro de um fluxo contínuo de bits?
+2 Contagem de Caracteres (quantos caracteres (ou bytes) existem neste quadro)
+	1 Se a mensagem é A B C, e o protocolo inclui o byte de contagem no total, o quadro seria 4 A B C
+3 Enquadramento com FLAGS e Inserção de Bytes (Byte Stuffing)
+	1 Usa-se um byte especial (chamado FLAG) para marcar o INÍCIO e o FIM do quadro.
+	2 O Problema: E se o dado que você quer enviar (ex: uma foto ou um arquivo binário) contiver acidentalmente o mesmo padrão de bits da FLAG? O receptor acharia que o quadro acabou antes da hora.
+	3 Solução: Usa-se um byte de escape (ESC). Se o dado contém a FLAG, o emissor insere um ESC antes dele e depois dele (Ex: print Python com aspas ou Caracter_especial Latex)
+4 Enquadramento com FLAGS e Inserção de Bits (Bit Stuffing)
+	1 Semelhante ao anterior, mas opera a nível de bits, padrão padrão é geralmente 01111110 (seis números 1 cercados por zeros).
+	2 O dado não pode conter seis 1s seguidos, senão parecerá uma flag.
+	3 Solução:
+		EMISSOR: Sempre que o hardware encontra cinco 1s consecutivos nos dados (11111), ele insere automaticamente um 0 logo depois.
+		RECEPTOR: Sempre que ele vê cinco 1s seguidos:Se o próximo bit for 0: Ele remove o zero (era bit stuffing); Se o próximo bit for 1: Ele olha o bit seguinte. Se for 0 (01111110), é uma FLAG (fim de quadro).
