@@ -104,8 +104,8 @@ class JanelaPrincipal(Gtk.Window):
         grade_cfg.attach(self.campo_sigma, 1, 2, 1, 1)
 
         # opção de ruído
-        self.checkbox_ruido = Gtk.CheckButton(label="Ativar ruído (Gaussiano)")
-        grade_cfg.attach(self.checkbox_ruido, 2, 2, 1, 1)
+        self.checkbox_debug = Gtk.CheckButton(label="Ativar flag de debug")
+        grade_cfg.attach(self.checkbox_debug, 2, 2, 1, 1)
 
         # -----------------------------------------------------
         # NOTEBOOK COM AS ABAS TX / RX / FÍSICA
@@ -404,6 +404,7 @@ class JanelaPrincipal(Gtk.Window):
         freq = converter_float_seguro(self.campo_frequencia_tx.get_text(), 1000.0)
         sigma = converter_float_seguro(self.campo_sigma.get_text(), 0.1)
         bps = converter_int_seguro(self.campo_bps_tx.get_text(), 1)
+        debug = self.checkbox_debug.get_active()
 
         taxa = int(freq * 1000) if freq > 0 else 1000
 
@@ -413,7 +414,7 @@ class JanelaPrincipal(Gtk.Window):
             bits_por_simbolo=bps,
             taxa_amostragem=taxa,
             sigma=sigma,
-            debug=False,
+            debug=debug,
         )
 
         demodulador = Demodulador(
@@ -447,6 +448,7 @@ class JanelaPrincipal(Gtk.Window):
         freq = converter_float_seguro(self.campo_frequencia_tx.get_text(), 1000.0)
         sigma = converter_float_seguro(self.campo_sigma.get_text(), 0.1)
         bps = converter_int_seguro(self.campo_bps_tx.get_text(), 1)
+        debug = self.checkbox_debug.get_active()
 
         taxa = int(freq * 1000) if freq > 0 else 1000
 
@@ -456,7 +458,7 @@ class JanelaPrincipal(Gtk.Window):
             frequencia_de_simbolo=freq,
             taxa_amostragem=taxa,
             sigma=sigma,
-            debug=False,
+            debug=debug,
         )
 
         decodificador = Decodificador(
