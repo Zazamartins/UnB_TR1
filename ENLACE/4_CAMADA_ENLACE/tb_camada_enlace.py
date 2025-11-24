@@ -2,9 +2,7 @@ from CamadaEnlace import Transmissor, Receptor
 import random
 import time
 
-# ==============================================================================
-# CONFIGURAÇÕES VISUAIS E UTILITÁRIOS
-# ==============================================================================
+# ---------------------------CONFIGURAÇÕES VISUAIS E UTILITÁRIOS---------------------
 class Cores:
     RESET = "\033[0m"
     BOLD = "\033[1m"
@@ -14,28 +12,27 @@ class Cores:
     BLUE = "\033[94m"
     CYAN = "\033[96m"
     GRAY = "\033[90m"
+    MAGENTA = "\033[95m"
 
 def print_header(texto):
-    print(f"\n{Cores.CYAN}{'='*70}")
+    print(f"\n{Cores.CYAN}{'='*80}")
     print(f" {texto}")
-    print(f"{'='*70}{Cores.RESET}")
+    print(f"{'='*80}{Cores.RESET}")
 
 def simular_canal_fisico(bits, forcar_erro_pos=None, chance_erro=0.0):
-    """
-    Simula o meio físico. Pode injetar erro aleatório ou em posição fixa.
-    """
+    """Simula o meio físico com injeção de ruído."""
     lista_bits = list(bits)
     erro_ocorreu = False
     posicao = -1
 
-    # Modo 1: Erro forçado (para testes determinísticos)
+    # Modo 1: Erro forçado
     if forcar_erro_pos is not None:
         if 0 <= forcar_erro_pos < len(lista_bits):
             lista_bits[forcar_erro_pos] = '0' if lista_bits[forcar_erro_pos] == '1' else '1'
             erro_ocorreu = True
             posicao = forcar_erro_pos
 
-    # Modo 2: Erro aleatório (simulação real)
+    # Modo 2: Erro aleatório
     elif chance_erro > 0:
         if random.random() < chance_erro:
             posicao = random.randint(0, len(lista_bits) - 1)
@@ -45,9 +42,11 @@ def simular_canal_fisico(bits, forcar_erro_pos=None, chance_erro=0.0):
     print(f"\n   {Cores.GRAY}[CANAL FÍSICO] Trafegando {len(bits)} bits...{Cores.RESET}")
     if erro_ocorreu:
         print(f"   {Cores.RED}⚡ RUÍDO DETECTADO! O bit na posição {posicao} foi invertido.{Cores.RESET}")
-        print(f"   {Cores.RED}   Original: ...{bits[max(0, posicao-3):min(len(bits), posicao+4)]}...{Cores.RESET}")
-        bits_mod = "".join(lista_bits)
-        print(f"   {Cores.RED}   Alterado: ...{bits_mod[max(0, posicao-3):min(len(lista_bits), posicao+4)]}...{Cores.RESET}")
+        # Mostra contexto visual do erro
+        inicio = max(0, posicao-3)
+        fim = min(len(bits), posicao+4)
+        print(f"   {Cores.RED}   Antes: ...{bits[inicio:fim]}...{Cores.RESET}")
+        print(f"   {Cores.RED}   Depois:...{''.join(lista_bits)[inicio:fim]}...{Cores.RESET}")
     else:
         print(f"   {Cores.GREEN}✔ Sinal chegou intacto ao receptor.{Cores.RESET}")
         
@@ -55,6 +54,12 @@ def simular_canal_fisico(bits, forcar_erro_pos=None, chance_erro=0.0):
 
 def exibir_resultado_rx(res_rx, dado_original):
     print(f"\n   {Cores.BLUE}➔ RECEPTOR (RX):{Cores.RESET}")
+    
+    # Mostra alertas de tamanho se houver (Feature da GUI)
+    detalhes = res_rx['detalhes']
+    if "(Aviso:" in detalhes:
+        detalhes = detalhes.replace("(Aviso:", f"{Cores.YELLOW}(Aviso:")
+    
     print(f"     1. Desenquadramento: {res_rx['info_enquadramento']}")
     print(f"     2. Verificação Erro: {res_rx['info_erro']}")
     
@@ -63,100 +68,104 @@ def exibir_resultado_rx(res_rx, dado_original):
     if status == "ERRO": cor_status = Cores.RED
     elif status == "CORRIGIDO": cor_status = Cores.YELLOW
     
-    print(f"     3. Status Final:     {cor_status}[{status}] {res_rx['detalhes']}{Cores.RESET}")
+    print(f"     3. Status Final:     {cor_status}[{status}]{Cores.RESET} {detalhes}")
     print(f"     4. Dados Entregues:  {Cores.BOLD}{res_rx['dados_finais']}{Cores.RESET}")
     
     if res_rx['dados_finais'] == dado_original:
-        print(f"   {Cores.GREEN}✅ SUCESSO: A mensagem recebida é IDÊNTICA à enviada.{Cores.RESET}")
+        print(f"   {Cores.GREEN}✅ SUCESSO: A integridade dos dados foi mantida.{Cores.RESET}")
     else:
         if status == "ERRO":
-             print(f"   {Cores.GREEN}🛡️ SEGURANÇA: O sistema rejeitou corretamente o pacote corrompido.{Cores.RESET}")
+             print(f"   {Cores.GREEN}🛡️ SEGURANÇA: O sistema rejeitou corretamente o pacote.{Cores.RESET}")
         else:
-             print(f"   {Cores.RED}❌ FALHA CRÍTICA: Dados diferentes foram aceitos!{Cores.RESET}")
+             print(f"   {Cores.RED}❌ FALHA CRÍTICA: Dados corrompidos foram aceitos!{Cores.RESET}")
 
-
-# ==============================================================================
-# INSTANCIANDO O SISTEMA
-# ==============================================================================
+# --------------------------------INSTANCIANDO O SISTEMA----------------------------------
 tx = Transmissor()
 rx = Receptor()
 
-# ==============================================================================
-# CENÁRIO 1: BYTE STUFFING + CRC-32 (O Clássico Robusto)
-# ==============================================================================
-print_header("CENÁRIO 1: Byte Stuffing + CRC-32 (Sucesso)")
-
-# Dados contendo a FLAG (01111110) no meio para testar o Stuffing
-# 01000001 (A) + 01111110 (FLAG) + 01000010 (B)
+# ---------------------------CENÁRIO 1: (Uso Padrão)----------------------------------------------
+print_header("CENÁRIO 1: Byte Stuffing + CRC-32 (Uso Padrão)")
 dado_original = "010000010111111001000010" 
-print(f"   Dados Originais: {dado_original}")
-print(f"   {Cores.YELLOW}Nota: O dado contém a sequência da FLAG no meio! O Byte Stuffing deve tratar.{Cores.RESET}")
+print(f"   Dados: {dado_original}")
+print(f"   {Cores.GRAY}Teste sem passar parametros extras (usa defaults 1500/32){Cores.RESET}")
 
-# 1. Transmissão (Enquadramento=1 [Byte], Erro=2 [CRC])
-print(f"\n   {Cores.BLUE}➔ TRANSMISSOR (TX):{Cores.RESET}")
+# TX Padrão
 res_tx = tx.processar(dado_original, tipo_enquadramento=1, tipo_erro=2)
-print(f"     1. Payload Protegido (CRC add): {res_tx['payload_protegido']}")
-print(f"     2. Quadro (Com Stuffing):       {res_tx['quadro_final']}")
-print(f"        {Cores.GRAY}(Veja que a string cresceu para escapar a flag interna){Cores.RESET}")
+print(f"\n   {Cores.BLUE}➔ TRANSMISSOR (TX):{Cores.RESET}")
+print(f"     Payload: {res_tx['payload_protegido']}")
+print(f"     Quadro:  {res_tx['quadro_final']}")
 
-# 2. Canal (Sem erro)
-no_fio = simular_canal_fisico(res_tx['quadro_final'], chance_erro=0.0)
-
-# 3. Recepção
+no_fio = simular_canal_fisico(res_tx['quadro_final'])
 res_rx = rx.processar(no_fio, tipo_enquadramento=1, tipo_erro=2)
 exibir_resultado_rx(res_rx, dado_original)
 
 
-# ==============================================================================
-# CENÁRIO 2: BIT STUFFING + CHECKSUM (Detecção de Erro)
-# ==============================================================================
-print_header("CENÁRIO 2: Bit Stuffing + Checksum (Detecção de Erro)")
+# -----------------------------CENÁRIO 2: GUI FEATURE - CHECKSUM VARIÁVEL (8 BITS)----------------------------------
+print_header("CENÁRIO 2: GUI Feature - Checksum Reduzido (8 bits)")
+dado_original = "11111111" # 8 bits de 1s
+# Soma = 255 (0xFF). Inverso = 0. Checksum deve ser 00000000.
+# Mas como checksum soma blocos, vamos ver o comportamento com tam_edc=8.
 
-# Sequência com muitos 1s para testar Bit Stuffing
-dado_original = "1111111111111111" # 16 uns
-print(f"   Dados Originais: {dado_original}")
+print(f"   Dados: {dado_original}")
+print(f"   {Cores.MAGENTA}Configuração GUI: Tamanho EDC = 8 bits (padrão era 16){Cores.RESET}")
 
-# 1. Transmissão (Enquadramento=2 [Bit], Erro=1 [Checksum])
+# TX com Checksum (tipo 1) e tam_edc=8
+res_tx = tx.processar(dado_original, 1, 1, tam_edc=8)
+
 print(f"\n   {Cores.BLUE}➔ TRANSMISSOR (TX):{Cores.RESET}")
-res_tx = tx.processar(dado_original, tipo_enquadramento=2, tipo_erro=1)
-print(f"     1. Payload Protegido: {res_tx['payload_protegido']}")
-print(f"     2. Quadro Final:      {res_tx['quadro_final']}")
+print(f"     Payload Protegido: {res_tx['payload_protegido']}")
+# Verifica visualmente se adicionou apenas 8 bits
+tam_extra = len(res_tx['payload_protegido']) - len(dado_original)
+print(f"     {Cores.YELLOW}Check:{Cores.RESET} Adicionados {tam_extra} bits de EDC (Esperado: 8)")
 
-# 2. Canal (COM ERRO FORÇADO)
-# Vamos inverter um bit no meio do payload
-posicao_erro = 10 
-no_fio = simular_canal_fisico(res_tx['quadro_final'], forcar_erro_pos=posicao_erro)
+no_fio = simular_canal_fisico(res_tx['quadro_final'])
 
-# 3. Recepção
-res_rx = rx.processar(no_fio, tipo_enquadramento=2, tipo_erro=1)
+# RX deve receber o mesmo parametro de tamanho
+res_rx = rx.processar(no_fio, 1, 1, tam_edc=8)
 exibir_resultado_rx(res_rx, dado_original)
 
 
-# ==============================================================================
-# CENÁRIO 3: CONTAGEM CARACTERES + HAMMING (Correção Mágica)
-# ==============================================================================
-print_header("CENÁRIO 3: Contagem + Hamming (Correção de Erro)")
+# --------------------------CENÁRIO 3: GUI FEATURE - ESTOURO DE TAMANHO DE QUADRO-------------------------------------
+print_header("CENÁRIO 3: GUI Feature - Limite de MTU (Tamanho Máx)")
+# Cria um dado grande (80 bits = 10 bytes)
+dado_original = "1" * 80 
+print(f"   Dados: {len(dado_original)} bits (10 bytes)")
+print(f"   {Cores.MAGENTA}Configuração GUI: Tamanho Máx Quadro = 5 bytes (Vai estourar!){Cores.RESET}")
 
-# ASCII 'K' (75) -> 01001011
-dado_original = "01001011" 
-print(f"   Dados Originais: {dado_original}")
+# TX com limite apertado (5 bytes)
+res_tx = tx.processar(dado_original, 0, 0, tam_max_quadro=5)
 
-# 1. Transmissão (Enquadramento=0 [Contagem], Erro=3 [Hamming])
 print(f"\n   {Cores.BLUE}➔ TRANSMISSOR (TX):{Cores.RESET}")
-res_tx = tx.processar(dado_original, tipo_enquadramento=0, tipo_erro=3)
-print(f"     1. Payload (Hamming): {res_tx['payload_protegido']}")
-print(f"     2. Quadro Final:      {res_tx['quadro_final']}")
+print(f"     Quadro Final: {res_tx['quadro_final']}")
+# Verifica se o aviso foi gerado
+if res_tx['aviso']:
+    print(f"     {Cores.RED}ALERTA GUI:{Cores.RESET}{res_tx['aviso']}")
+else:
+    print(f"     {Cores.GREEN}Tamanho OK.{Cores.RESET}")
 
-# 2. Canal (COM ERRO FORÇADO NO DADO)
-# O Hamming deve ser capaz de corrigir 1 bit errado.
-# Vamos contar onde começa o dado real dentro do quadro (pula cabeçalho de contagem 8 bits)
-# O payload Hamming expande os bits. Vamos chutar um bit no meio.
-no_fio = simular_canal_fisico(res_tx['quadro_final'], forcar_erro_pos=12)
+no_fio = simular_canal_fisico(res_tx['quadro_final'])
 
-# 3. Recepção
-res_rx = rx.processar(no_fio, tipo_enquadramento=0, tipo_erro=3)
+# RX também verifica
+res_rx = rx.processar(no_fio, 0, 0, tam_max_quadro=5)
 exibir_resultado_rx(res_rx, dado_original)
 
-print(f"\n{Cores.CYAN}{'='*70}")
+
+# ------------------------------------CENÁRIO 4: HAMMING (Correção)---------------------------------------
+print_header("CENÁRIO 4: Hamming (Correção de Erro)")
+dado_original = "1001100" # ASCII 'L'
+print(f"   Dados: {dado_original}")
+
+# TX Hamming (tipo 3)
+res_tx = tx.processar(dado_original, 0, 3)
+print(f"\n   {Cores.BLUE}➔ TRANSMISSOR (TX):{Cores.RESET}")
+print(f"     Payload: {res_tx['payload_protegido']}")
+
+# Força erro no bit 5
+no_fio = simular_canal_fisico(res_tx['quadro_final'], forcar_erro_pos=5)
+
+res_rx = rx.processar(no_fio, 0, 3)
+exibir_resultado_rx(res_rx, dado_original)
+
+print(f"\n{Cores.CYAN}{'='*80}")
 print(f" FIM DA SIMULAÇÃO")
-print(f"{'='*70}{Cores.RESET}")
+print(f"{'='*80}{Cores.RESET}")

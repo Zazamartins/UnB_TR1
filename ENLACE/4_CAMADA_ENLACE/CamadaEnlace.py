@@ -1,5 +1,6 @@
 """
 ENLACE SEPARADO EM RX E TX PARA FACILITAR GUI COM GTK
+Atualizado para receber parâmetros de Tamanho de Quadro e Tamanho de EDC da GUI.
 """
 
 class Utilitarios:
@@ -49,38 +50,54 @@ class Utilitarios:
 class Transmissor:
     """Classe responsável por transformar DADOS em QUADROS."""
     
-    def processar(self, dados_bits: str, tipo_enquadramento: int, tipo_erro: int) -> dict:
-        # 1. Adiciona Controle de Erro
-        payload = self._aplicar_controle_erro(dados_bits, tipo_erro)
+    # ATUALIZAÇÃO: Novos parâmetros tam_max_quadro (bytes) e tam_edc (bits)
+    def processar(self, dados_bits: str, tipo_enquadramento: int, tipo_erro: int, 
+                  tam_max_quadro: int = 1500, tam_edc: int = 32) -> dict:
+        
+        # 1. Adiciona Controle de Erro (Passamos o tam_edc para usar no Checksum)
+        payload = self._aplicar_controle_erro(dados_bits, tipo_erro, tam_edc)
+        
         # 2. Aplica Enquadramento
         quadro = self._aplicar_enquadramento(payload, tipo_enquadramento)
         
+        # 3. Validação do Tamanho Máximo (Requisito da GUI)
+        tamanho_bytes_atual = len(quadro) // 8
+        aviso_tamanho = ""
+        if tamanho_bytes_atual > tam_max_quadro:
+            aviso_tamanho = f" [ALERTA: Quadro ({tamanho_bytes_atual}B) excedeu o máx de {tam_max_quadro}B]"
+
         return {
             "tipo": "TX",
-            # AQUI ESTAVA O ERRO: Padronizado para 'payload_protegido'
             "payload_protegido": payload, 
             "quadro_final": quadro,
             "info_erro": Utilitarios.get_nome_erro(tipo_erro),
-            "info_enquadramento": Utilitarios.get_nome_enq(tipo_enquadramento)
+            "info_enquadramento": Utilitarios.get_nome_enq(tipo_enquadramento),
+            "aviso": aviso_tamanho # Campo extra para a GUI mostrar se quiser
         }
 
-    def _aplicar_controle_erro(self, bits, tipo):
+    def _aplicar_controle_erro(self, bits, tipo, tam_edc):
         # 0:Paridade, 1:Checksum, 2:CRC, 3:Hamming
-        if tipo == 0:
+        if tipo == 0: # Paridade (1 bit fixo)
             acc = 0
             for b in bits: acc ^= int(b)
             return bits + str(acc)
-        elif tipo == 1:
-            n = 16
+        
+        elif tipo == 1: # Checksum (Agora usa tam_edc da GUI)
+            n = tam_edc # Antes era fixo em 16
+            # Garante que n seja > 0
+            if n <= 0: n = 16 
+            
             s = Utilitarios.checksum_math(bits, n)
             c = (~s) & ((1 << n) - 1)
             return bits + format(c, f'0{n}b')
-        elif tipo == 2:
+        
+        elif tipo == 2: # CRC-32 (Fixo em 32 bits pelo polinômio IEEE)
             d = int(bits, 2)
             d_padded = d << 32
             r = Utilitarios.divisao_crc(d_padded)
             return bits + format(r, '032b')
-        elif tipo == 3:
+        
+        elif tipo == 3: # Hamming
             m, r = len(bits), 0
             while (2**r) < (m + r + 1): r += 1
             total = m + r
@@ -132,12 +149,21 @@ class Transmissor:
 class Receptor:
     """Classe responsável por validar e limpar o quadro."""
     
-    def processar(self, quadro: str, tipo_enquadramento: int, tipo_erro: int) -> dict:
+    # ATUALIZAÇÃO: Novos parâmetros na recepção também
+    def processar(self, quadro: str, tipo_enquadramento: int, tipo_erro: int, 
+                  tam_max_quadro: int = 1500, tam_edc: int = 32) -> dict:
+        
+        # Validação simples de tamanho na entrada
+        tamanho_bytes = len(quadro) // 8
+        msg_aviso = ""
+        if tamanho_bytes > tam_max_quadro:
+            msg_aviso = f"(Aviso: Quadro recebido > {tam_max_quadro} bytes)"
+
         # 1. Desenquadra
         payload = self._remover_enquadramento(quadro, tipo_enquadramento)
         
-        # 2. Verifica Erro
-        res = self._verificar_controle_erro(payload, tipo_erro)
+        # 2. Verifica Erro (Passamos tam_edc para saber quantos bits cortar no Checksum)
+        res = self._verificar_controle_erro(payload, tipo_erro, tam_edc)
         
         return {
             "tipo": "RX",
@@ -145,7 +171,7 @@ class Receptor:
             "payload_extraido": payload,
             "dados_finais": res['dados'],
             "status": res['status'],
-            "detalhes": res['msg'],
+            "detalhes": res['msg'] + " " + msg_aviso,
             "info_erro": Utilitarios.get_nome_erro(tipo_erro),
             "info_enquadramento": Utilitarios.get_nome_enq(tipo_enquadramento)
         }
@@ -184,7 +210,7 @@ class Receptor:
             return out
         return quadro
 
-    def _verificar_controle_erro(self, bits, tipo):
+    def _verificar_controle_erro(self, bits, tipo, tam_edc):
         if tipo == 0: # Paridade
             dados = bits[:-1]
             acc = 0
@@ -192,15 +218,19 @@ class Receptor:
             if acc == 0: return {'dados': dados, 'status': 'SUCESSO', 'msg': 'Paridade OK'}
             return {'dados': dados, 'status': 'ERRO', 'msg': 'Paridade Inválida'}
         
-        elif tipo == 1: # Checksum
-            dados = bits[:-16]
-            s = Utilitarios.checksum_math(bits, 16)
-            c = (~s) & ((1 << 16) - 1)
+        elif tipo == 1: # Checksum (Usa tam_edc)
+            n = tam_edc
+            if n <= 0: n = 16
+
+            # Corta os últimos n bits
+            dados = bits[:-n] 
+            s = Utilitarios.checksum_math(bits, n)
+            c = (~s) & ((1 << n) - 1)
             if c == 0: return {'dados': dados, 'status': 'SUCESSO', 'msg': 'Checksum OK'}
             return {'dados': dados, 'status': 'ERRO', 'msg': 'Soma Incorreta'}
             
         elif tipo == 2: # CRC
-            dados = bits[:-32]
+            dados = bits[:-32] # CRC-32 é fixo
             if len(bits) < 32: return {'dados': "", 'status': 'ERRO', 'msg': 'Curto demais'}
             d = int(bits, 2)
             if Utilitarios.divisao_crc(d) == 0:
